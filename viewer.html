@@ -151,13 +151,11 @@
         
         if (wrapper.innerHTML.trim() === '') {
           if (validMakeCodeUrl) {
-            // FIX: Wait 350ms for CSS to completely finish animating the panel into view.
-            // Using strict absolute positioning to force iframe size regardless of Flexbox.
             setTimeout(() => {
               wrapper.innerHTML = `
                 <div style="background: #111827; padding: 6px; text-align: center; border-bottom: 1px solid #1f2937; height: 35px; flex-shrink: 0;">
                   <a href="${directMakeCodeUrl}" target="_blank" style="color: #60a5fa; text-decoration: none; font-size: 0.85rem; font-weight: bold;">
-                    🚀 If the editor is blank, click here to open in Full Screen
+                    🚀 Open in Full Screen
                   </a>
                 </div>
                 <div style="flex: 1; position: relative; width: 100%;">
@@ -332,21 +330,23 @@
       }
     }
 
-    // 4. URL Parser Engine
+    // 4. URL Parser Engine (Sanitizes invisible characters using REGEX)
     function initMakeCodeViewer() {
       const hexBtn = document.getElementById('hex-download-link');
       let rawText = project.makecodeUrl || "";
 
       if (rawText) {
-        let cleanUrl = rawText.trim();
-        let urlParts = cleanUrl.split('/');
-        let codeId = urlParts.pop(); 
-        
-        codeId = codeId.replace('#pub:', '').replace('---codeembed', '').replace('---embed', '').trim();
+        // Surgically extract ONLY valid MakeCode ID formats (like S39984-82118-19270-64682 or _abc123)
+        // This ignores \r, \n, spaces, or any other garbage data glued to the string by Google Drive.
+        const idMatch = rawText.match(/(S\d+-\d+-\d+-\d+|_[\w\-]+)/i);
 
-        if (codeId) {
+        if (idMatch && idMatch[1]) {
+          const codeId = idMatch[1];
+          
+          // Pure embed URL exactly as MakeCode requires
           validMakeCodeUrl = `https://makecode.microbit.org/---codeembed#pub:${codeId}`;
-          directMakeCodeUrl = `https://makecode.microbit.org/#pub:${codeId}`;
+          // Clean fallback URL
+          directMakeCodeUrl = `https://makecode.microbit.org/${codeId}`;
         }
       }
 
