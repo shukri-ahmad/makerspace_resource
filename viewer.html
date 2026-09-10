@@ -317,7 +317,7 @@
       }
     }
 
-    // 4. MakeCode Viewer Engine (Completely rebuilt for pure HTML embedding)
+    // 4. MakeCode Viewer Engine (Fixed for iframe storage blocking)
     function initMakeCodeViewer() {
       const iframe = document.getElementById('makecode-frame');
       const hexBtn = document.getElementById('hex-download-link');
@@ -325,20 +325,17 @@
       let rawText = project.makecodeUrl || "";
       let targetUrl = "";
 
-      if (rawText) {
-        // 1. Grab whatever is at the very end of the URL from Google Drive
-        let codeId = rawText.split('/').pop();
-        
-        // 2. Clean out any of the broken prefixes injected by Apps Script
-        codeId = codeId.replace('---embed#pub:', '')
-                       .replace('---codeembed#pub:', '')
-                       .replace('#pub:', '');
-                       
-        // 3. Build a pure, standard MakeCode public link
-        targetUrl = `https://makecode.microbit.org/#pub:${codeId}`;
-      }
+      // 1. Find the exact alphanumeric MakeCode ID that comes after the underscore
+      const match = rawText.match(/_([a-zA-Z0-9]+)/);
 
-      if (targetUrl && targetUrl !== "https://makecode.microbit.org/#pub:") {
+      if (match && match[1]) {
+        // 2. MUST use '---codeembed'. 
+        // Full editor (#pub:_) causes a blank screen due to third-party storage blocks.
+        // '---embed' causes a raw JavaScript text dump.
+        targetUrl = `https://makecode.microbit.org/---codeembed#pub:_${match[1]}`;
+      } 
+
+      if (targetUrl) {
         iframe.removeAttribute('srcdoc'); 
         iframe.setAttribute("sandbox", "allow-popups allow-forms allow-scripts allow-same-origin");
         iframe.setAttribute('data-src', targetUrl);
