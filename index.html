@@ -60,7 +60,7 @@
     .brand-tagline {
       font-size: 0.78rem;
       font-weight: 600;
-      color: #38bdf8; /* Vibrant Cyan */
+      color: #38bdf8;
       letter-spacing: 0.02em;
       margin-top: 2px;
     }
@@ -137,7 +137,6 @@
       gap: 1.75rem;
     }
 
-    /* FUN & MODERN CARDS */
     .card {
       background: #111827;
       border: 1px solid #1f2937;
@@ -204,7 +203,6 @@
       gap: 8px;
     }
 
-    /* LOADING & EMPTY STATES */
     #loading-state {
       text-align: center;
       padding: 4rem 1rem;
@@ -229,7 +227,6 @@
 </head>
 <body>
 
-  <!-- HEADER WITH OPTION 1 BRANDING -->
   <header>
     <div class="brand-container">
       <span class="brand-title">MAKERSPACE@UTHM</span>
@@ -241,14 +238,12 @@
     </div>
   </header>
 
-  <!-- HERO BANNER -->
   <section class="hero">
     <span class="hero-badge">Interactive Learning Hub</span>
     <h1>Explore Hands-On PBL Projects</h1>
     <p>Select a project below to launch interactive step-by-step guides, inspect 3D STL parts, view component lists, and edit live MakeCode programs.</p>
   </section>
 
-  <!-- CATALOG GRID CONTAINER -->
   <main class="catalog-container">
     <div id="loading-state">
       <div class="spinner"></div>
@@ -260,6 +255,17 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbz0yr_RIIed8K_6YoijYV3-VEdnBmpQsu_f5Wt1TCKqrXvsb5a1ZH_KWPRfPCnOeZO1FQ/exec";
 
+    // Helper: Converts Google Drive viewing/sharing links into direct direct-display image URLs
+    function formatDriveImageUrl(url) {
+      if (!url) return '';
+      // If it contains a Drive File ID, convert to direct view endpoint
+      const match = url.match(/[\w-]{25,}/);
+      if (match && match[0]) {
+        return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w800`;
+      }
+      return url;
+    }
+
     async function loadProjects() {
       const grid = document.getElementById('project-grid');
       const loading = document.getElementById('loading-state');
@@ -268,7 +274,6 @@
         const response = await fetch(API_URL);
         const projects = await response.json();
 
-        // Save projects to sessionStorage so viewer.html can read them instantly
         sessionStorage.setItem('makerspace_projects', JSON.stringify(projects));
 
         loading.style.display = 'none';
@@ -280,11 +285,16 @@
 
         grid.innerHTML = '';
         projects.forEach((proj, index) => {
-          const thumbnail = proj.thumbnailUrl || 'https://via.placeholder.com/300x180/1f2937/9ca3af?text=No+Thumbnail';
+          const rawThumb = proj.thumbnailUrl || (proj.tutorialPages && proj.tutorialPages[0]) || '';
+          const cleanThumb = formatDriveImageUrl(rawThumb) || 'https://via.placeholder.com/300x180/1f2937/9ca3af?text=MAKERSPACE+Module';
 
           grid.innerHTML += `
             <a href="viewer.html?id=${index}" class="card">
-              <img src="${thumbnail}" class="card-thumb" alt="${proj.title}" loading="lazy">
+              <img src="${cleanThumb}" 
+                   class="card-thumb" 
+                   alt="${proj.title}" 
+                   loading="lazy" 
+                   onerror="this.onerror=null; this.src='https://via.placeholder.com/300x180/1f2937/9ca3af?text=MAKERSPACE+Module';">
               <div class="card-body">
                 <h3 class="card-title">${proj.title}</h3>
                 <div class="card-footer">
