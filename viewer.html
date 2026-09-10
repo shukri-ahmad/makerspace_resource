@@ -102,7 +102,7 @@
       </div>
     </div>
 
-    <!-- PANEL 4: MAKECODE VIEWER -->
+    <!-- PANEL 4: MAKECODE VIEWER (Empty wrapper for dynamic injection) -->
     <div id="panel-makecode" class="view-panel">
       <div class="makecode-toolbar">
         <span style="font-size: 0.85rem; color: #9ca3af;">Interactive MakeCode Editor & Block Preview</span>
@@ -330,22 +330,27 @@
       }
     }
 
-    // 4. URL Parser Engine (Sanitizes invisible characters using REGEX)
+    // 4. URL Parser Engine (Intelligently injects the missing MakeCode underscore)
     function initMakeCodeViewer() {
       const hexBtn = document.getElementById('hex-download-link');
       let rawText = project.makecodeUrl || "";
 
       if (rawText) {
-        // Surgically extract ONLY valid MakeCode ID formats (like S39984-82118-19270-64682 or _abc123)
-        // This ignores \r, \n, spaces, or any other garbage data glued to the string by Google Drive.
-        const idMatch = rawText.match(/(S\d+-\d+-\d+-\d+|_[\w\-]+)/i);
+        // Extract the raw MakeCode ID (ignores \n \r hidden text spacing)
+        const match = rawText.match(/([a-zA-Z0-9\-_]{10,})/);
 
-        if (idMatch && idMatch[1]) {
-          const codeId = idMatch[1];
+        if (match && match[0]) {
+          let codeId = match[0].replace('pub:', '').replace('#', '');
           
-          // Pure embed URL exactly as MakeCode requires
+          // CRITICAL FIX: MakeCode 404s completely if the ID does not start with an underscore.
+          // Since your text file has "S39984..." instead of "_S39984...", we enforce it here!
+          if (codeId.startsWith('_')) {
+            codeId = codeId.substring(1);
+          }
+          codeId = '_' + codeId;
+
+          // Pure URLs correctly formatted for MakeCode
           validMakeCodeUrl = `https://makecode.microbit.org/---codeembed#pub:${codeId}`;
-          // Clean fallback URL
           directMakeCodeUrl = `https://makecode.microbit.org/${codeId}`;
         }
       }
