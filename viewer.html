@@ -13,24 +13,24 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
 
   <style>
-    /* STRICT LAYOUT */
+    /* CLEAN STANDARD LAYOUT */
     * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0b0f19; color: white; font-family: sans-serif; }
+    body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0b0f19; color: white; font-family: sans-serif; display: flex; flex-direction: column; }
 
-    header { height: 60px; background: #111827; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d92525; }
+    header { height: 60px; background: #111827; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d92525; flex-shrink: 0; }
     header a { color: #fff; text-decoration: none; font-weight: bold; background: #374151; padding: 6px 12px; border-radius: 4px; font-size: 0.85rem; }
     #project-title { font-size: 1rem; font-weight: bold; color: #f3f4f6; }
 
-    .tab-bar { height: 50px; background: #1f2937; display: flex; justify-content: center; gap: 8px; border-bottom: 1px solid #374151; align-items: center; overflow-x: auto; }
+    .tab-bar { height: 50px; background: #1f2937; display: flex; justify-content: center; gap: 8px; border-bottom: 1px solid #374151; align-items: center; overflow-x: auto; flex-shrink: 0; }
     .tab-btn { background: #374151; color: #9ca3af; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; transition: all 0.2s; white-space: nowrap; }
     .tab-btn.active { background: #2563eb; color: white; }
 
-    /* EXACT STAGE CALCULATION */
-    .stage { width: 100%; height: calc(100vh - 110px); position: relative; background: #0b0f19; overflow: hidden; }
+    /* STAGE - Fixed to prevent scrollbars */
+    .stage { flex: 1; position: relative; overflow: hidden; background: #0b0f19; }
     
-    /* Absolute Card Stack Layout */
-    .view-panel { position: absolute; top: 0; left: -9999px; width: 100%; height: 100%; background: #0b0f19; z-index: 1; opacity: 0; transition: opacity 0.2s ease-in-out; }
-    .view-panel.active { left: 0; z-index: 2; opacity: 1; display: flex; flex-direction: column; }
+    /* PANELS - Clean display toggle (Fixes text bleed) */
+    .view-panel { width: 100%; height: 100%; display: none; flex-direction: column; }
+    .view-panel.active { display: flex; }
 
     /* 1. Tutorial Swiper */
     .swiper { width: 100%; height: 100%; }
@@ -57,7 +57,7 @@
     /* 4. MakeCode Viewer Panel */
     .makecode-toolbar { height: 45px; width: 100%; background: #1f2937; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem; border-bottom: 1px solid #374151; flex-shrink: 0; }
     .hex-btn { background: #2563eb; color: white; padding: 5px 12px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold; }
-    #makecode-wrapper { flex: 1; width: 100%; display: flex; flex-direction: column; position: relative; }
+    #makecode-wrapper { flex: 1; width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; }
   </style>
 </head>
 <body>
@@ -116,7 +116,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbz0yr_RIIed8K_6YoijYV3-VEdnBmpQsu_f5Wt1TCKqrXvsb5a1ZH_KWPRfPCnOeZO1FQ/exec";
 
     let swiper, scene, camera, renderer, controls, currentMesh;
-    let cleanMakeCodeUrl = ""; 
+    let targetMakeCodeUrl = ""; 
 
     const params = new URLSearchParams(window.location.search);
     const id = parseInt(params.get('id')) || 0;
@@ -148,30 +148,23 @@
       } else if (tab === 'makecode') {
         const wrapper = document.getElementById('makecode-wrapper');
         
+        // Dynamically inject the iframe exactly when clicked to prevent height collapse
         if (wrapper.innerHTML.trim() === '') {
-          if (cleanMakeCodeUrl) {
-            setTimeout(() => {
-              wrapper.innerHTML = `
-                <div style="background: #111827; padding: 6px; text-align: center; border-bottom: 1px solid #1f2937; height: 35px; flex-shrink: 0;">
-                  <a href="${cleanMakeCodeUrl}" target="_blank" style="color: #60a5fa; text-decoration: none; font-size: 0.85rem; font-weight: bold;">
-                    🚀 Open in Full Screen
-                  </a>
-                </div>
-                <div style="flex: 1; position: relative; width: 100%;">
-                  <iframe src="${cleanMakeCodeUrl}" 
-                          sandbox="allow-popups allow-forms allow-scripts allow-same-origin" 
-                          allowfullscreen="allowfullscreen" 
-                          frameborder="0" 
-                          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background:#111827;">
-                  </iframe>
-                </div>
-              `;
-            }, 350);
+          if (targetMakeCodeUrl) {
+            // NO SANDBOX ATTRIBUTE: This gives MakeCode 100% permission to run
+            wrapper.innerHTML = `
+              <div style="background: #111827; padding: 8px; text-align: center; border-bottom: 1px solid #1f2937; flex-shrink:0;">
+                <a href="${targetMakeCodeUrl}" target="_blank" style="color: #60a5fa; text-decoration: none; font-size: 0.85rem; font-weight: bold;">
+                  🚀 Open Editor in Full Screen
+                </a>
+              </div>
+              <iframe src="${targetMakeCodeUrl}" allowfullscreen="allowfullscreen" frameborder="0" style="flex:1; width:100%; height:100%; border:none; display:block;"></iframe>
+            `;
           } else {
             wrapper.innerHTML = `
               <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; text-align:center;">
                 <h3 style="color:#9ca3af;">No valid MakeCode link found.</h3>
-                <p style="color:#6b7280; font-size:0.85rem;">Ensure a .txt file inside the Drive folder contains your share link.</p>
+                <p style="color:#6b7280; font-size:0.85rem;">Ensure a .txt file inside the Drive folder contains your valid share link.</p>
               </div>`;
           }
         }
@@ -329,18 +322,22 @@
       }
     }
 
-    // 4. URL Parser Engine (No manipulation, just pure sanitized URL)
+    // 4. SURGICAL REGEX PARSER (Completely ignores all broken cache data)
     function initMakeCodeViewer() {
       const hexBtn = document.getElementById('hex-download-link');
       let rawText = project.makecodeUrl || "";
 
       if (rawText) {
-        // Strip out any hidden characters (\r, \n) and spaces that Drive might have added
-        let sanitizedUrl = rawText.replace(/[\r\n\s]+/g, "");
-        
-        if (sanitizedUrl.includes("makecode.microbit.org")) {
-          // Pass the EXACT link directly to the iframe without trying to restructure it
-          cleanMakeCodeUrl = sanitizedUrl;
+        // This Regex strictly hunts for MakeCode IDs:
+        // Format 1: S followed by 4 blocks of numbers (S39984-82118-19270-64682)
+        // Format 2: Underscore followed by letters/numbers (_abc123)
+        // It entirely ignores "---embed", HTML tags, invisible spaces, etc.
+        const match = rawText.match(/(S\d{5}-\d{5}-\d{5}-\d{5}|_[a-zA-Z0-9]+)/);
+
+        if (match && match[0]) {
+          const cleanId = match[0];
+          // ALWAYS force the #pub: endpoint. This guarantees the editor loads, not raw JS.
+          targetMakeCodeUrl = `https://makecode.microbit.org/#pub:${cleanId}`;
         }
       }
 
