@@ -29,8 +29,8 @@
     .stage { width: 100%; height: calc(100vh - 110px); position: relative; background: #0b0f19; overflow: hidden; }
     
     /* Absolute Card Stack Layout */
-    .view-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0b0f19; display: none; z-index: 1; }
-    .view-panel.active { display: flex; flex-direction: column; z-index: 2; }
+    .view-panel { position: absolute; top: 0; left: -9999px; width: 100%; height: 100%; background: #0b0f19; z-index: 1; opacity: 0; transition: opacity 0.2s ease-in-out; }
+    .view-panel.active { left: 0; z-index: 2; opacity: 1; display: flex; flex-direction: column; }
 
     /* 1. Tutorial Swiper */
     .swiper { width: 100%; height: 100%; }
@@ -57,8 +57,6 @@
     /* 4. MakeCode Viewer Panel */
     .makecode-toolbar { height: 45px; width: 100%; background: #1f2937; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem; border-bottom: 1px solid #374151; flex-shrink: 0; }
     .hex-btn { background: #2563eb; color: white; padding: 5px 12px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold; }
-    
-    /* Make sure the wrapper naturally fills the remaining height */
     #makecode-wrapper { flex: 1; width: 100%; display: flex; flex-direction: column; position: relative; }
   </style>
 </head>
@@ -104,7 +102,7 @@
       </div>
     </div>
 
-    <!-- PANEL 4: MAKECODE VIEWER (Empty wrapper for dynamic injection) -->
+    <!-- PANEL 4: MAKECODE VIEWER -->
     <div id="panel-makecode" class="view-panel">
       <div class="makecode-toolbar">
         <span style="font-size: 0.85rem; color: #9ca3af;">Interactive MakeCode Editor & Block Preview</span>
@@ -149,23 +147,29 @@
       if (tab === 'stl') {
         setTimeout(onWindowResize, 50); 
       } else if (tab === 'makecode') {
-        // DYNAMIC INJECTION: Only build the iframe when the tab is fully visible
         const wrapper = document.getElementById('makecode-wrapper');
         
         if (wrapper.innerHTML.trim() === '') {
           if (validMakeCodeUrl) {
-            // FIX: Removed the restrictive 'sandbox' attribute so IndexedDB doesn't crash.
-            // Added a fallback button directly above the iframe.
+            // FIX: Wait 350ms for CSS to completely finish animating the panel into view.
+            // Using strict absolute positioning to force iframe size regardless of Flexbox.
             setTimeout(() => {
               wrapper.innerHTML = `
-                <div style="background: #111827; padding: 6px; text-align: center; border-bottom: 1px solid #1f2937;">
+                <div style="background: #111827; padding: 6px; text-align: center; border-bottom: 1px solid #1f2937; height: 35px; flex-shrink: 0;">
                   <a href="${directMakeCodeUrl}" target="_blank" style="color: #60a5fa; text-decoration: none; font-size: 0.85rem; font-weight: bold;">
                     🚀 If the editor is blank, click here to open in Full Screen
                   </a>
                 </div>
-                <iframe src="${validMakeCodeUrl}" allowfullscreen="allowfullscreen" frameborder="0" style="flex:1; width:100%; border:none; background:#111827;"></iframe>
+                <div style="flex: 1; position: relative; width: 100%;">
+                  <iframe src="${validMakeCodeUrl}" 
+                          sandbox="allow-popups allow-forms allow-scripts allow-same-origin" 
+                          allowfullscreen="allowfullscreen" 
+                          frameborder="0" 
+                          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;">
+                  </iframe>
+                </div>
               `;
-            }, 50);
+            }, 350);
           } else {
             wrapper.innerHTML = `
               <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; text-align:center;">
@@ -328,31 +332,24 @@
       }
     }
 
-    // 4. URL Parser Engine (Fixed for all ID types, including "S...")
+    // 4. URL Parser Engine
     function initMakeCodeViewer() {
       const hexBtn = document.getElementById('hex-download-link');
       let rawText = project.makecodeUrl || "";
 
       if (rawText) {
-        // Clean the text to ensure no invisible spaces/newlines ruin the link
         let cleanUrl = rawText.trim();
-        
-        // Grab strictly what is after the final slash
         let urlParts = cleanUrl.split('/');
-        let codeId = urlParts.pop(); // Returns "S39984-82118-19270-64682"
+        let codeId = urlParts.pop(); 
         
-        // Scrub out any leftover prefixes just in case
         codeId = codeId.replace('#pub:', '').replace('---codeembed', '').replace('---embed', '').trim();
 
         if (codeId) {
-          // Construct the proper block embed URL 
           validMakeCodeUrl = `https://makecode.microbit.org/---codeembed#pub:${codeId}`;
-          // Construct the pure full-screen URL for the fallback button
           directMakeCodeUrl = `https://makecode.microbit.org/#pub:${codeId}`;
         }
       }
 
-      // Show the hardware HEX download button if the file exists
       if (project.makecodeHexUrl) {
         hexBtn.href = project.makecodeHexUrl;
         hexBtn.style.display = 'inline-block';
