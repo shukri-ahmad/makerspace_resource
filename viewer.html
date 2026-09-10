@@ -20,7 +20,6 @@
     header a { color: #fff; text-decoration: none; font-weight: bold; background: #374151; padding: 6px 12px; border-radius: 4px; font-size: 0.85rem; }
     #project-title { font-size: 1rem; font-weight: bold; color: #f3f4f6; }
 
-    /* PBL Workbench Tabs Bar */
     .tab-bar { height: 50px; background: #1f2937; display: flex; justify-content: center; gap: 8px; border-bottom: 1px solid #374151; align-items: center; overflow-x: auto; flex-shrink: 0; }
     .tab-btn { background: #374151; color: #9ca3af; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; transition: all 0.2s; white-space: nowrap; }
     .tab-btn.active { background: #2563eb; color: white; }
@@ -142,7 +141,7 @@
       } else if (tab === 'stl') {
         document.querySelectorAll('.tab-btn')[2].classList.add('active');
         document.getElementById('panel-stl').classList.add('active');
-        setTimeout(onWindowResize, 50); // Ensure proper canvas size trigger
+        setTimeout(onWindowResize, 50);
       } else if (tab === 'makecode') {
         document.querySelectorAll('.tab-btn')[3].classList.add('active');
         document.getElementById('panel-makecode').classList.add('active');
@@ -188,7 +187,7 @@
       });
     }
 
-    // 3. Three.js 3D STL Engine (Robust CORS Direct Loader)
+    // 3. Three.js 3D STL Engine (Base64 Memory Parsing - No CORS Restrictions)
     function init3DViewer() {
       const container = document.getElementById('stl-canvas-container');
       scene = new THREE.Scene();
@@ -236,39 +235,43 @@
       if (!file) return;
 
       document.getElementById('download-stl-link').href = file.downloadUrl;
-      statusEl.innerText = 'Downloading 3D model...';
+      statusEl.innerText = 'Rendering 3D model...';
 
-      // Load using direct Drive download endpoint for binary compatibility
       const loader = new THREE.STLLoader();
-      loader.load(
-        file.downloadUrl,
-        (geometry) => {
-          if (currentMesh) scene.remove(currentMesh);
+      
+      try {
+        // Parse Base64 Data URI directly in browser memory bypassing network CORS blocks
+        const geometry = loader.parse(base64ToArrayBuffer(file.dataUri.split(',')[1]));
+        
+        if (currentMesh) scene.remove(currentMesh);
 
-          const material = new THREE.MeshPhongMaterial({ color: 0x2563eb, specular: 0x111111, shininess: 150 });
-          currentMesh = new THREE.Mesh(geometry, material);
+        const material = new THREE.MeshPhongMaterial({ color: 0x2563eb, specular: 0x111111, shininess: 150 });
+        currentMesh = new THREE.Mesh(geometry, material);
 
-          geometry.center();
-          currentMesh.rotation.x = -Math.PI / 2;
+        geometry.center();
+        currentMesh.rotation.x = -Math.PI / 2;
 
-          scene.add(currentMesh);
+        scene.add(currentMesh);
 
-          geometry.computeBoundingSphere();
-          const radius = geometry.boundingSphere.radius || 50;
-          camera.position.set(radius * 2.2, radius * 2.2, radius * 2.2);
-          controls.target.set(0, 0, 0);
-          statusEl.innerText = 'Model Loaded Successfully';
-        },
-        (xhr) => {
-          if (xhr.lengthComputable) {
-            statusEl.innerText = 'Loading: ' + Math.round((xhr.loaded / xhr.total) * 100) + '%';
-          }
-        },
-        (error) => {
-          console.error("STL Error:", error);
-          statusEl.innerText = 'Error rendering 3D model';
-        }
-      );
+        geometry.computeBoundingSphere();
+        const radius = geometry.boundingSphere.radius || 50;
+        camera.position.set(radius * 2.2, radius * 2.2, radius * 2.2);
+        controls.target.set(0, 0, 0);
+        statusEl.innerText = 'Model Loaded Successfully';
+      } catch (err) {
+        console.error("STL Parsing Error:", err);
+        statusEl.innerText = 'Error parsing STL geometry';
+      }
+    }
+
+    function base64ToArrayBuffer(base64) {
+      const binaryString = window.atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes.buffer;
     }
 
     function animate3D() {
@@ -286,14 +289,13 @@
       }
     }
 
-    // 4. MakeCode Viewer Engine (Embedded Share Link Parser)
+    // 4. MakeCode Viewer Engine
     function initMakeCodeViewer() {
       const iframe = document.getElementById('makecode-frame');
       const hexBtn = document.getElementById('hex-download-link');
 
       let targetUrl = project.makecodeUrl || "";
 
-      // Ensure proper MakeCode Embed URL format
       if (targetUrl.includes('makecode.microbit.org') && !targetUrl.includes('---embed')) {
         let codeId = targetUrl.split('/').pop().replace('_', '');
         targetUrl = "https://makecode.microbit.org/---embed#pub:_" + codeId;
@@ -305,7 +307,7 @@
         iframe.srcdoc = `
           <body style="background:#111827; color:#9ca3af; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; margin:0;">
             <h3>No live MakeCode share link uploaded to Drive.</h3>
-            <p style="font-size:0.85rem; color:#6b7280;">Place a shared_link.txt file inside the MakeCode folder in Drive.</p>
+            <p style="font-size:0.85rem; color:#6b7280;">Place a text file with your share link inside the MakeCode folder in Drive.</p>
           </body>`;
       }
 
