@@ -13,7 +13,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
 
   <style>
-    /* STRICT LAYOUT: Disables body scrollbars permanently */
+    /* STRICT LAYOUT: Locks the screen size completely */
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0b0f19; color: white; font-family: sans-serif; }
 
@@ -25,12 +25,30 @@
     .tab-btn { background: #374151; color: #9ca3af; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; transition: all 0.2s; white-space: nowrap; }
     .tab-btn.active { background: #2563eb; color: white; }
 
-    /* EXACT STAGE CALCULATION: 100% height minus header (60px) and tabs (50px) = 110px */
-    .stage { width: 100%; height: calc(100vh - 110px); position: relative; background: #0b0f19; }
+    /* EXACT STAGE CALCULATION */
+    .stage { width: 100%; height: calc(100vh - 110px); position: relative; background: #0b0f19; overflow: hidden; }
     
-    /* PANELS STACKED LIKE CARDS (No Flex layout issues) */
-    .view-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0b0f19; display: none; z-index: 1; }
-    .view-panel.active { display: block; z-index: 2; }
+    /* 
+       OFF-SCREEN RENDERING FIX 
+       Instead of display: none (which makes MakeCode collapse), 
+       we push inactive panels 9999px off-screen so they still retain 100% height!
+    */
+    .view-panel { 
+        position: absolute; 
+        top: 0; 
+        left: -9999px; /* Hidden off-screen */
+        width: 100%; 
+        height: 100%; 
+        background: #0b0f19; 
+        z-index: 1; 
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+    }
+    .view-panel.active { 
+        left: 0; /* Bring to center */
+        z-index: 2; 
+        opacity: 1;
+    }
 
     /* 1. Tutorial Swiper */
     .swiper { width: 100%; height: 100%; }
@@ -141,15 +159,9 @@
       if(targetPanel) targetPanel.classList.add('active');
       if(targetBtn) targetBtn.classList.add('active');
       
+      // Tell Three.js canvas to recalculate its aspect ratio since it just came on screen
       if (tab === 'stl') {
         setTimeout(onWindowResize, 50); 
-      } else if (tab === 'makecode') {
-        const iframe = document.getElementById('makecode-frame');
-        const dataSrc = iframe.getAttribute('data-src');
-        if (dataSrc && (!iframe.src || iframe.src.includes('about:blank'))) {
-          // Delay loading iframe slightly so display:block gets fully painted by browser
-          setTimeout(() => { iframe.src = dataSrc; }, 100);
-        }
       }
     }
 
@@ -304,7 +316,7 @@
       }
     }
 
-    // 4. MakeCode Viewer Engine
+    // 4. MakeCode Viewer Engine (Now sets source IMMEDIATELY, preventing height collapse)
     function initMakeCodeViewer() {
       const iframe = document.getElementById('makecode-frame');
       const hexBtn = document.getElementById('hex-download-link');
@@ -323,7 +335,8 @@
       if (targetUrl) {
         iframe.removeAttribute('srcdoc'); 
         iframe.setAttribute("sandbox", "allow-popups allow-forms allow-scripts allow-same-origin");
-        iframe.setAttribute('data-src', targetUrl);
+        // Because the panel is pushed off-screen (not display: none), we can load it instantly!
+        iframe.src = targetUrl; 
       } else {
         iframe.srcdoc = `
           <body style="background:#111827; color:#9ca3af; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; margin:0; text-align:center;">
