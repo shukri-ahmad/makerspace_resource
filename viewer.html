@@ -102,7 +102,7 @@
       </div>
     </div>
 
-    <!-- PANEL 4: MAKECODE VIEWER (Empty wrapper for dynamic injection) -->
+    <!-- PANEL 4: MAKECODE VIEWER -->
     <div id="panel-makecode" class="view-panel">
       <div class="makecode-toolbar">
         <span style="font-size: 0.85rem; color: #9ca3af;">Interactive MakeCode Editor & Block Preview</span>
@@ -116,8 +116,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbz0yr_RIIed8K_6YoijYV3-VEdnBmpQsu_f5Wt1TCKqrXvsb5a1ZH_KWPRfPCnOeZO1FQ/exec";
 
     let swiper, scene, camera, renderer, controls, currentMesh;
-    let validMakeCodeUrl = ""; 
-    let directMakeCodeUrl = ""; 
+    let cleanMakeCodeUrl = ""; 
 
     const params = new URLSearchParams(window.location.search);
     const id = parseInt(params.get('id')) || 0;
@@ -150,20 +149,20 @@
         const wrapper = document.getElementById('makecode-wrapper');
         
         if (wrapper.innerHTML.trim() === '') {
-          if (validMakeCodeUrl) {
+          if (cleanMakeCodeUrl) {
             setTimeout(() => {
               wrapper.innerHTML = `
                 <div style="background: #111827; padding: 6px; text-align: center; border-bottom: 1px solid #1f2937; height: 35px; flex-shrink: 0;">
-                  <a href="${directMakeCodeUrl}" target="_blank" style="color: #60a5fa; text-decoration: none; font-size: 0.85rem; font-weight: bold;">
+                  <a href="${cleanMakeCodeUrl}" target="_blank" style="color: #60a5fa; text-decoration: none; font-size: 0.85rem; font-weight: bold;">
                     🚀 Open in Full Screen
                   </a>
                 </div>
                 <div style="flex: 1; position: relative; width: 100%;">
-                  <iframe src="${validMakeCodeUrl}" 
+                  <iframe src="${cleanMakeCodeUrl}" 
                           sandbox="allow-popups allow-forms allow-scripts allow-same-origin" 
                           allowfullscreen="allowfullscreen" 
                           frameborder="0" 
-                          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;">
+                          style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background:#111827;">
                   </iframe>
                 </div>
               `;
@@ -330,28 +329,18 @@
       }
     }
 
-    // 4. URL Parser Engine (Intelligently injects the missing MakeCode underscore)
+    // 4. URL Parser Engine (No manipulation, just pure sanitized URL)
     function initMakeCodeViewer() {
       const hexBtn = document.getElementById('hex-download-link');
       let rawText = project.makecodeUrl || "";
 
       if (rawText) {
-        // Extract the raw MakeCode ID (ignores \n \r hidden text spacing)
-        const match = rawText.match(/([a-zA-Z0-9\-_]{10,})/);
-
-        if (match && match[0]) {
-          let codeId = match[0].replace('pub:', '').replace('#', '');
-          
-          // CRITICAL FIX: MakeCode 404s completely if the ID does not start with an underscore.
-          // Since your text file has "S39984..." instead of "_S39984...", we enforce it here!
-          if (codeId.startsWith('_')) {
-            codeId = codeId.substring(1);
-          }
-          codeId = '_' + codeId;
-
-          // Pure URLs correctly formatted for MakeCode
-          validMakeCodeUrl = `https://makecode.microbit.org/---codeembed#pub:${codeId}`;
-          directMakeCodeUrl = `https://makecode.microbit.org/${codeId}`;
+        // Strip out any hidden characters (\r, \n) and spaces that Drive might have added
+        let sanitizedUrl = rawText.replace(/[\r\n\s]+/g, "");
+        
+        if (sanitizedUrl.includes("makecode.microbit.org")) {
+          // Pass the EXACT link directly to the iframe without trying to restructure it
+          cleanMakeCodeUrl = sanitizedUrl;
         }
       }
 
