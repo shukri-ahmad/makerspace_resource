@@ -112,6 +112,9 @@
   </div>
 
   <script>
+    // MUST match the API URL in your index.html exactly
+    const API_URL = "https://script.google.com/macros/s/AKfycbz8RhgUEIuDEEjEN2JL87Sb_F_kZQn94H_s-IQtA7BHiuVkcqb279nK7JYfvV05J8VV/exec";
+
     let swiper, scene, camera, renderer, controls, currentMesh;
     const params = new URLSearchParams(window.location.search);
     const id = parseInt(params.get('id')) || 0;
@@ -141,7 +144,7 @@
       } else if (tab === 'stl') {
         document.querySelectorAll('.tab-btn')[2].classList.add('active');
         document.getElementById('panel-stl').classList.add('active');
-        setTimeout(onWindowResize, 50); // Ensure canvas resizes smoothly
+        setTimeout(onWindowResize, 50); 
       } else if (tab === 'makecode') {
         document.querySelectorAll('.tab-btn')[3].classList.add('active');
         document.getElementById('panel-makecode').classList.add('active');
@@ -187,7 +190,7 @@
       });
     }
 
-    // 3. Three.js 3D STL Engine (Robust Proxy Loading to fix binary corruption)
+    // 3. Three.js 3D STL Engine (Custom Proxy via Apps Script)
     function init3DViewer() {
       const container = document.getElementById('stl-canvas-container');
       scene = new THREE.Scene();
@@ -235,17 +238,22 @@
       if (!file) return;
 
       document.getElementById('download-stl-link').href = file.downloadUrl;
-      statusEl.innerText = 'Connecting to Drive...';
+      statusEl.innerText = 'Extracting from Drive...';
       statusEl.style.color = '#60a5fa';
 
-      const loader = new THREE.STLLoader();
-      
-      // Use corsproxy to safely grab the raw binary file directly from the download URL, bypassing Base64 corruption
-      const proxyUrl = "https://corsproxy.io/?url=" + encodeURIComponent(file.downloadUrl);
+      // Ask our Apps Script directly for the Base64 of this specific file
+      const proxyUrl = API_URL + "?fileId=" + file.id;
 
-      loader.load(
-        proxyUrl,
-        (geometry) => {
+      fetch(proxyUrl, { redirect: 'follow' })
+        .then(res => res.text())
+        .then(base64 => {
+          if (base64 === "ERROR") throw new Error("File extraction failed");
+          
+          statusEl.innerText = 'Building 3D Mesh...';
+          const buffer = base64ToArrayBuffer(base64);
+          const loader = new THREE.STLLoader();
+          const geometry = loader.parse(buffer);
+
           if (currentMesh) scene.remove(currentMesh);
 
           const material = new THREE.MeshPhongMaterial({ color: 0x2563eb, specular: 0x111111, shininess: 150 });
@@ -259,41 +267,26 @@
           const radius = geometry.boundingSphere.radius || 50;
           camera.position.set(radius * 2.2, radius * 2.2, radius * 2.2);
           controls.target.set(0, 0, 0);
-          
+
           statusEl.innerText = 'Model Loaded';
-          statusEl.style.color = '#4ade80'; // Success green
-        },
-        (xhr) => {
-          if (xhr.lengthComputable) {
-            statusEl.innerText = 'Loading: ' + Math.round((xhr.loaded / xhr.total) * 100) + '%';
-          }
-        },
-        (error) => {
-          console.error("Proxy Load Error:", error);
-          
-          // Fallback Proxy if CORSproxy.io blocks it
-          const fallbackProxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(file.downloadUrl);
-          statusEl.innerText = 'Attempting backup server...';
-          
-          loader.load(fallbackProxy, (geometry) => {
-             if (currentMesh) scene.remove(currentMesh);
-             const material = new THREE.MeshPhongMaterial({ color: 0x2563eb, specular: 0x111111, shininess: 150 });
-             currentMesh = new THREE.Mesh(geometry, material);
-             geometry.center();
-             currentMesh.rotation.x = -Math.PI / 2;
-             scene.add(currentMesh);
-             geometry.computeBoundingSphere();
-             const radius = geometry.boundingSphere.radius || 50;
-             camera.position.set(radius * 2.2, radius * 2.2, radius * 2.2);
-             controls.target.set(0, 0, 0);
-             statusEl.innerText = 'Model Loaded';
-             statusEl.style.color = '#4ade80';
-          }, undefined, () => {
-             statusEl.innerText = 'Failed to load model';
-             statusEl.style.color = '#f87171'; // Error red
-          });
-        }
-      );
+          statusEl.style.color = '#4ade80';
+        })
+        .catch(err => {
+          console.error("STL Native Proxy Error:", err);
+          statusEl.innerText = 'Failed to load model';
+          statusEl.style.color = '#f87171';
+        });
+    }
+
+    // Helper: Safely convert Base64 string back to binary ArrayBuffer without hitting stack limits
+    function base64ToArrayBuffer(base64) {
+      const binaryString = window.atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes.buffer;
     }
 
     function animate3D() {
@@ -318,12 +311,10 @@
 
       let targetUrl = project.makecodeUrl || "";
 
-      // Force strictly correct Micro:bit code embed format regardless of what is typed in the text file
       if (targetUrl.includes('makecode.microbit.org')) {
         const match = targetUrl.match(/_([a-zA-Z0-9\-]+)/);
         if (match && match[1]) {
           const codeId = match[1];
-          // Use '---codeembed' for the previewer, or '#pub:' for the full editor
           targetUrl = `https://makecode.microbit.org/---codeembed#pub:_${codeId}`;
         }
       }
