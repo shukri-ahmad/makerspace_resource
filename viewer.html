@@ -13,7 +13,6 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
 
   <style>
-    /* CLEAN STANDARD LAYOUT */
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #0b0f19; color: white; font-family: sans-serif; display: flex; flex-direction: column; }
 
@@ -25,10 +24,8 @@
     .tab-btn { background: #374151; color: #9ca3af; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; transition: all 0.2s; white-space: nowrap; }
     .tab-btn.active { background: #2563eb; color: white; }
 
-    /* STAGE - Fixed to prevent scrollbars */
     .stage { flex: 1; position: relative; overflow: hidden; background: #0b0f19; }
     
-    /* PANELS - Clean display toggle (Fixes text bleed) */
     .view-panel { width: 100%; height: 100%; display: none; flex-direction: column; }
     .view-panel.active { display: flex; }
 
@@ -116,7 +113,8 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbz0yr_RIIed8K_6YoijYV3-VEdnBmpQsu_f5Wt1TCKqrXvsb5a1ZH_KWPRfPCnOeZO1FQ/exec";
 
     let swiper, scene, camera, renderer, controls, currentMesh;
-    let targetMakeCodeUrl = ""; 
+    let embedUrl = "";
+    let fullScreenUrl = "";
 
     const params = new URLSearchParams(window.location.search);
     const id = parseInt(params.get('id')) || 0;
@@ -148,17 +146,15 @@
       } else if (tab === 'makecode') {
         const wrapper = document.getElementById('makecode-wrapper');
         
-        // Dynamically inject the iframe exactly when clicked to prevent height collapse
         if (wrapper.innerHTML.trim() === '') {
-          if (targetMakeCodeUrl) {
-            // NO SANDBOX ATTRIBUTE: This gives MakeCode 100% permission to run
+          if (embedUrl) {
             wrapper.innerHTML = `
               <div style="background: #111827; padding: 8px; text-align: center; border-bottom: 1px solid #1f2937; flex-shrink:0;">
-                <a href="${targetMakeCodeUrl}" target="_blank" style="color: #60a5fa; text-decoration: none; font-size: 0.85rem; font-weight: bold;">
-                  🚀 Open Editor in Full Screen
+                <a href="${fullScreenUrl}" target="_blank" style="color: #60a5fa; text-decoration: none; font-size: 0.85rem; font-weight: bold;">
+                  🚀 Open Project in MakeCode Full Screen
                 </a>
               </div>
-              <iframe src="${targetMakeCodeUrl}" allowfullscreen="allowfullscreen" frameborder="0" style="flex:1; width:100%; height:100%; border:none; display:block;"></iframe>
+              <iframe src="${embedUrl}" allowfullscreen="allowfullscreen" frameborder="0" style="flex:1; width:100%; height:100%; border:none; display:block;"></iframe>
             `;
           } else {
             wrapper.innerHTML = `
@@ -322,22 +318,27 @@
       }
     }
 
-    // 4. SURGICAL REGEX PARSER (Completely ignores all broken cache data)
+    // 4. DUAL FORMAT PARSER (S-Codes vs Short IDs)
     function initMakeCodeViewer() {
       const hexBtn = document.getElementById('hex-download-link');
       let rawText = project.makecodeUrl || "";
 
       if (rawText) {
-        // This Regex strictly hunts for MakeCode IDs:
-        // Format 1: S followed by 4 blocks of numbers (S39984-82118-19270-64682)
-        // Format 2: Underscore followed by letters/numbers (_abc123)
-        // It entirely ignores "---embed", HTML tags, invisible spaces, etc.
-        const match = rawText.match(/(S\d{5}-\d{5}-\d{5}-\d{5}|_[a-zA-Z0-9]+)/);
+        // Match S-code format: S39984-82118-19270-64682
+        const sMatch = rawText.match(/(S\d{5}-\d{5}-\d{5}-\d{5})/i);
+        // Match standard short ID format: _abc123def
+        const shortMatch = rawText.match(/(_[a-zA-Z0-9]+)/);
 
-        if (match && match[0]) {
-          const cleanId = match[0];
-          // ALWAYS force the #pub: endpoint. This guarantees the editor loads, not raw JS.
-          targetMakeCodeUrl = `https://makecode.microbit.org/#pub:${cleanId}`;
+        if (sMatch && sMatch[1]) {
+          const codeId = sMatch[1];
+          // S-Codes do NOT use #pub:. They use /pub for iframe or clean URL for full screen.
+          embedUrl = `https://makecode.microbit.org/${codeId}/pub`;
+          fullScreenUrl = `https://makecode.microbit.org/${codeId}`;
+        } else if (shortMatch && shortMatch[1]) {
+          const codeId = shortMatch[1];
+          // Short IDs require ---codeembed#pub:
+          embedUrl = `https://makecode.microbit.org/---codeembed#pub:${codeId}`;
+          fullScreenUrl = `https://makecode.microbit.org/#pub:${codeId}`;
         }
       }
 
