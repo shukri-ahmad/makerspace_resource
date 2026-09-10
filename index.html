@@ -132,24 +132,18 @@
       box-shadow: 0 4px 14px rgba(217, 37, 37, 0.3);
     }
 
-    /* MAKEROBOT ECOSYSTEM LOGO - SCALED TO 75% AND GLOW ADDED */
+    /* MAKEROBOT ECOSYSTEM LOGO - SCALED TO 75%, NO GLOW */
     .hero-resource-logo {
       width: 100%;
       max-width: 285px; /* 75% of previous 380px size */
       height: auto;
       margin-bottom: 1.5rem;
-      /* Soft radial background to ensure contrast */
-      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 65%);
-      padding: 10px;
-      border-radius: 50%;
-      /* White drop-shadow to make the black text pop */
-      filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.6)) drop-shadow(0 15px 25px rgba(0, 0, 0, 0.6));
+      filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.6));
       transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .hero-resource-logo:hover {
       transform: translateY(-8px) scale(1.02);
-      filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.8)) drop-shadow(0 15px 25px rgba(0, 0, 0, 0.6));
     }
 
     .hero h1 {
@@ -283,7 +277,7 @@
 
     <div class="status-badge">
       <div class="status-pulse"></div>
-      PBL Workbench Hub
+      Open Source Workbench Hub
     </div>
   </header>
 
