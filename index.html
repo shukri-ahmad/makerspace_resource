@@ -26,7 +26,7 @@
       overflow-x: hidden;
     }
 
-    /* GLASS HEADER WITH OFFICIAL LOGO */
+    /* GLASS HEADER */
     header {
       min-height: 95px;
       background: rgba(17, 24, 39, 0.85);
@@ -49,7 +49,7 @@
       gap: 1.25rem;
     }
 
-    /* OFFICIAL LOGO IMAGE STYLING */
+    /* OFFICIAL LOGO IMAGE */
     .brand-logo-img {
       height: 65px;
       width: auto;
@@ -110,9 +110,12 @@
     /* HERO BANNER */
     .hero {
       text-align: center;
-      padding: 3.5rem 1.5rem 2rem;
+      padding: 3rem 1.5rem 2rem;
       max-width: 900px;
       margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .hero-badge {
@@ -125,8 +128,22 @@
       letter-spacing: 0.1em;
       padding: 5px 14px;
       border-radius: 12px;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
       box-shadow: 0 4px 14px rgba(217, 37, 37, 0.3);
+    }
+
+    /* MAKEROBOT ECOSYSTEM LOGO */
+    .hero-resource-logo {
+      width: 100%;
+      max-width: 380px;
+      height: auto;
+      margin-bottom: 1.5rem;
+      filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.6));
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .hero-resource-logo:hover {
+      transform: translateY(-8px) scale(1.02);
     }
 
     .hero h1 {
@@ -149,7 +166,7 @@
     .catalog-container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 2rem 1.5rem 4rem;
+      padding: 1rem 1.5rem 4rem;
     }
 
     .grid {
@@ -248,7 +265,7 @@
 </head>
 <body>
 
-  <!-- HEADER -->
+  <!-- OVERARCHING HEADER: MAKERSPACE@UTHM -->
   <header>
     <div class="brand-wrapper">
       <img src="logo.png" class="brand-logo-img" alt="MAKERSPACE@UTHM Logo">
@@ -264,9 +281,13 @@
     </div>
   </header>
 
-  <!-- HERO SECTION -->
+  <!-- SPECIFIC RESOURCE HERO: MAKEROBOT ECOSYSTEM -->
   <section class="hero">
     <span class="hero-badge">Interactive Learning Hub</span>
+    
+    <!-- NEW MAKEROBOT LOGO INSERTED HERE -->
+    <img src="MAKEROBOT_ECO-Photoroom.jpg" alt="MAKEROBOT Ecosystem" class="hero-resource-logo">
+    
     <h1>Explore MAKEROBOT Projects</h1>
     <p>Select a project below to launch interactive step-by-step guides, inspect 3D STL parts, view component lists, and preview live MakeCode programs.</p>
   </section>
@@ -281,12 +302,13 @@
   </main>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbz0yr_RIIed8K_6YoijYV3-VEdnBmpQsu_f5Wt1TCKqrXvsb5a1ZH_KWPRfPCnOeZO1FQ/exec";
+    // UPDATED APPS SCRIPT URL HERE:
+    const API_URL = "https://script.google.com/macros/s/AKfycbyHIpqSz3wZT984jtw-TwQaxZJMwJwIdmAQg9Jz3_0IkdjTBRYjbtxnHWCK84K_MIxUTQ/exec";
 
     function formatDriveImageUrl(url) {
       if (!url) return '';
       const match = url.match(/[\w-]{25,}/);
-      if (match && match[0]) {
+      if (match && match[0] && !url.includes('thumbnail?id=')) {
         return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w800`;
       }
       return url;
@@ -311,7 +333,7 @@
 
         grid.innerHTML = '';
         projects.forEach((proj, index) => {
-          const rawThumb = proj.thumbnailUrl || (proj.tutorialPages && proj.tutorialPages[0]) || '';
+          const rawThumb = proj.thumbnailUrl || proj.coverUrl || (proj.tutorialPages && proj.tutorialPages[0]) || '';
           const cleanThumb = formatDriveImageUrl(rawThumb) || 'https://via.placeholder.com/300x180/1f2937/9ca3af?text=MAKERSPACE+Module';
 
           grid.innerHTML += `
