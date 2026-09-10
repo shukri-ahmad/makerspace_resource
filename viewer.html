@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>PBL Guide Workbench | MAKERSPACE@UTHM</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0b0f19; color: white; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    header { height: 60px; background: #111827; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d92525; }
+    header a { color: #fff; text-decoration: none; font-weight: bold; background: #374151; padding: 6px 12px; border-radius: 4px; font-size: 0.85rem; }
+    #project-title { font-size: 1rem; font-weight: bold; color: #f3f4f6; }
+
+    .tab-bar { height: 50px; background: #1f2937; display: flex; justify-content: center; gap: 8px; border-bottom: 1px solid #374151; align-items: center; overflow-x: auto; }
+    .tab-btn { background: #374151; color: #9ca3af; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; transition: all 0.2s; white-space: nowrap; }
+    .tab-btn.active { background: #2563eb; color: white; }
+
+    .stage { flex: 1; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+    .view-panel { width: 100%; height: 100%; display: none; }
+    .view-panel.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+    .swiper { width: 100%; height: 100%; }
+    .swiper-slide { display: flex; align-items: center; justify-content: center; padding: 10px; }
+    .swiper-slide img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
+    .side-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(37, 99, 235, 0.45); color: #fff; border: 1px solid rgba(255,255,255,0.2); width: 44px; height: 44px; border-radius: 50%; cursor: pointer; z-index: 20; }
+    .side-nav-prev { left: 15px; } .side-nav-next { right: 15px; }
+
+    .components-container { width: 100%; max-width: 800px; height: 100%; overflow-y: auto; padding: 1.5rem; }
+    .component-card { background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .component-info h4 { margin: 0 0 4px 0; color: #f9fafb; font-size: 0.95rem; }
+    .component-info span { color: #9ca3af; font-size: 0.8rem; }
+    .buy-btn { background: #16a34a; color: white; padding: 6px 14px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.85rem; border:none; cursor:pointer; }
+    .buy-btn:hover { background: #15803d; }
+
+    #stl-canvas-container { width: 100%; height: 100%; position: relative; background: #090d16; }
+    .stl-sidebar { position: absolute; top: 15px; left: 15px; background: rgba(17, 24, 39, 0.85); backdrop-filter: blur(8px); padding: 12px; border-radius: 8px; border: 1px solid #374151; max-width: 250px; z-index: 10; }
+    .stl-sidebar select { width: 100%; background: #1f2937; color: white; border: 1px solid #4b5563; padding: 8px; border-radius: 4px; margin-bottom: 8px; }
+    .download-stl-btn { display: block; width: 100%; background: #2563eb; color: white; text-align: center; padding: 8px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.85rem; }
+
+    .makecode-container { width: 100%; height: 100%; display: flex; flex-direction: column; background: #111827; }
+    .makecode-toolbar { height: 45px; background: #1f2937; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem; border-bottom: 1px solid #374151; }
+    .hex-btn { background: #2563eb; color: white; padding: 5px 12px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold; }
+    iframe { flex: 1; border: none; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="index.html">← Back to Catalog</a>
+    <span id="project-title">Loading...</span>
+    <span>MAKERSPACE@UTHM</span>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('tutorial')">📚 Guide</button>
+    <button class="tab-btn" onclick="switchTab('components')">🧩 Parts List & Links</button>
+    <button class="tab-btn" onclick="switchTab('stl')">🛠️ 3D Parts (STL)</button>
+    <button class="tab-btn" onclick="switchTab('makecode')">💻 MakeCode Program</button>
+  </div>
+
+  <div class="stage">
+    <div id="panel-tutorial" class="view-panel active">
+      <button class="side-nav-btn side-nav-prev" onclick="swiper.slidePrev()">❮</button>
+      <button class="side-nav-btn side-nav-next" onclick="swiper.slideNext()">❯</button>
+      <div class="swiper" id="swiper-container"><div class="swiper-wrapper" id="swiper-wrapper"></div></div>
+    </div>
+
+    <div id="panel-components" class="view-panel">
+      <div class="components-container" id="components-list">
+        <p style="text-align: center; color: #9ca3af;">Loading required parts list...</p>
+      </div>
+    </div>
+
+    <div id="panel-stl" class="view-panel">
+      <div id="stl-canvas-container">
+        <div class="stl-sidebar">
+          <label style="font-size: 0.8rem; color: #9ca3af;">Select 3D Part:</label>
+          <select id="stl-select" onchange="loadSelectedSTL()"></select>
+          <a id="download-stl-link" class="download-stl-btn" href="#" target="_blank">Download STL File</a>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-makecode" class="view-panel">
+      <div class="makecode-container">
+        <div class="makecode-toolbar">
+          <span style="font-size: 0.85rem; color: #9ca3af;">Interactive MakeCode Block Viewer</span>
+          <a id="hex-download-link" class="hex-btn" href="#" target="_blank" style="display:none;">Download .HEX File</a>
+        </div>
+        <iframe id="makecode-frame" src="about:blank"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let swiper, scene, camera, renderer, controls, currentMesh;
+    const params = new URLSearchParams(window.location.search);
+    const id = parseInt(params.get('id')) || 0;
+    const projects = JSON.parse(sessionStorage.getItem('makerspace_projects') || '[]');
+    const project = projects[id];
+
+    if (project) {
+      document.getElementById('project-title').innerText = project.title;
+      initTutorial();
+      initComponentsList();
+      init3DViewer();
+      initMakeCodeViewer();
+    } else {
+      window.location.href = 'index.html';
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+      
+      if (tab === 'tutorial') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('panel-tutorial').classList.add('active');
+      } else if (tab === 'components') {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('panel-components').classList.add('active');
+      } else if (tab === 'stl') {
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+        document.getElementById('panel-stl').classList.add('active');
+        onWindowResize();
+      } else if (tab === 'makecode') {
+        document.querySelectorAll('.tab-btn')[3].classList.add('active');
+        document.getElementById('panel-makecode').classList.add('active');
+      }
+    }
+
+    function initTutorial() {
+      const wrapper = document.getElementById('swiper-wrapper');
+      if (!project.tutorialPages.length) {
+        wrapper.innerHTML = '<div class="swiper-slide">No tutorial pages found.</div>';
+        return;
+      }
+      project.tutorialPages.forEach(url => {
+        wrapper.innerHTML += `<div class="swiper-slide"><img src="${url}"></div>`;
+      });
+      swiper = new Swiper('#swiper-container', { speed: 400, grabCursor: true });
+    }
+
+    function initComponentsList() {
+      const container = document.getElementById('components-list');
+      if (!project.components.length) {
+        container.innerHTML = '<p style="text-align: center; color: #9ca3af;">No parts list uploaded for this project.</p>';
+        return;
+      }
+      container.innerHTML = '<h3 style="margin-bottom: 1rem; color: #f3f4f6;">Required Hardware & Components</h3>';
+      project.components.forEach(item => {
+        const isStlRef = item.link.startsWith('#stl');
+        const actionBtnHtml = isStlRef 
+          ? `<button class="buy-btn" style="background:#2563eb;" onclick="switchTab('stl')">View 3D STL</button>`
+          : `<a class="buy-btn" href="${item.link}" target="_blank">Buy / Link</a>`;
+
+        container.innerHTML += `
+          <div class="component-card">
+            <div class="component-info">
+              <h4>${item.name}</h4>
+              <span>Est. Price: ${item.price}</span>
+            </div>
+            ${actionBtnHtml}
+          </div>
+        `;
+      });
+    }
+
+    function init3DViewer() {
+      const container = document.getElementById('stl-canvas-container');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x090d16);
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(100, 100, 100);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight.position.set(1, 1, 1).normalize();
+      scene.add(dirLight);
+
+      const stlSelect = document.getElementById('stl-select');
+      if (project.stlFiles.length) {
+        project.stlFiles.forEach((file, i) => {
+          stlSelect.innerHTML += `<option value="${i}">${file.name}</option>`;
+        });
+        loadSelectedSTL();
+      } else {
+        stlSelect.innerHTML = '<option>No STL files found</option>';
+      }
+
+      window.addEventListener('resize', onWindowResize);
+      animate3D();
+    }
+
+    function loadSelectedSTL() {
+      const idx = document.getElementById('stl-select').value;
+      const file = project.stlFiles[idx];
+      if (!file) return;
+
+      document.getElementById('download-stl-link').href = file.downloadUrl;
+
+      const loader = new THREE.STLLoader();
+      loader.load(file.viewUrl, (geometry) => {
+        if (currentMesh) scene.remove(currentMesh);
+
+        const material = new THREE.MeshPhongMaterial({ color: 0x2563eb, specular: 0x111111, shininess: 200 });
+        currentMesh = new THREE.Mesh(geometry, material);
+
+        geometry.center();
+        currentMesh.rotation.x = -Math.PI / 2;
+
+        scene.add(currentMesh);
+
+        geometry.computeBoundingSphere();
+        const radius = geometry.boundingSphere.radius;
+        camera.position.set(radius * 2, radius * 2, radius * 2);
+        controls.target.set(0, 0, 0);
+      });
+    }
+
+    function animate3D() {
+      requestAnimationFrame(animate3D);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('stl-canvas-container');
+      if (renderer && container) {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      }
+    }
+
+    function initMakeCodeViewer() {
+      const iframe = document.getElementById('makecode-frame');
+      const hexBtn = document.getElementById('hex-download-link');
+
+      if (project.makecodeUrl) {
+        iframe.src = project.makecodeUrl;
+      } else {
+        iframe.srcdoc = `<body style="background:#111827; color:#9ca3af; display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif;"><h3>No live MakeCode share link uploaded. Download the .HEX file below.</h3></body>`;
+      }
+
+      if (project.makecodeHexUrl) {
+        hexBtn.href = project.makecodeHexUrl;
+        hexBtn.style.display = 'inline-block';
+      }
+    }
+  </script>
+</body>
+</html>
