@@ -26,9 +26,9 @@
       overflow-x: hidden;
     }
 
-    /* GLASS HEADER WITH PROMINENT LOGO */
+    /* GLASS HEADER WITH OFFICIAL LOGO */
     header {
-      min-height: 90px;
+      min-height: 95px;
       background: rgba(17, 24, 39, 0.85);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
@@ -46,25 +46,20 @@
     .brand-wrapper {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 1.25rem;
     }
 
-    /* PROMINENT LOGO ICON BADGE */
-    .brand-logo-badge {
-      width: 52px;
-      height: 52px;
-      background: linear-gradient(135deg, #d92525 0%, #2563eb 100%);
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 800;
-      font-size: 1.5rem;
-      color: white;
-      box-shadow: 0 0 20px rgba(37, 99, 235, 0.4), 0 0 10px rgba(217, 37, 37, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      flex-shrink: 0;
+    /* OFFICIAL LOGO IMAGE CONTAINER */
+    .brand-logo-img {
+      height: 65px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.15));
+      transition: transform 0.3s ease;
+    }
+
+    .brand-logo-img:hover {
+      transform: scale(1.03);
     }
 
     .brand-container {
@@ -253,13 +248,14 @@
 </head>
 <body>
 
-  <!-- PROMINENT HEADER WITH LOGO BADGE -->
+  <!-- HEADER WITH OFFICIAL LOGO IMAGE -->
   <header>
     <div class="brand-wrapper">
-      <div class="logo.png">M</div>
+      <!-- Ensure the image filename matches your uploaded file name in your repo -->
+      <img src="Logo MAKERSPACE (3)-Photoroom.jpg" class="brand-logo-img" alt="MAKERSPACE@UTHM Logo">
       <div class="brand-container">
         <span class="brand-title">MAKERSPACE@UTHM</span>
-        <span class="brand-tagline">Learning Through Robotics</span>
+        <span class="brand-tagline">Learning Through Robotics, Not Learning Robotics</span>
       </div>
     </div>
 
