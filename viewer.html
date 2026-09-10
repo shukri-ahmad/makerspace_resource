@@ -305,30 +305,39 @@
     }
 
     // 4. MakeCode Viewer Engine (Strict Embed URL Reconstruction)
+    // 4. MakeCode Viewer Engine (Strict Embed URL Reconstruction & Sandbox Fix)
     function initMakeCodeViewer() {
       const iframe = document.getElementById('makecode-frame');
       const hexBtn = document.getElementById('hex-download-link');
 
-      let targetUrl = project.makecodeUrl || "";
+      let rawText = project.makecodeUrl || "";
+      let targetUrl = "";
 
-      if (targetUrl.includes('makecode.microbit.org')) {
-        const match = targetUrl.match(/_([a-zA-Z0-9\-]+)/);
-        if (match && match[1]) {
-          const codeId = match[1];
-          targetUrl = `https://makecode.microbit.org/---codeembed#pub:_${codeId}`;
-        }
+      // Regex to find the exact MakeCode Share ID (starts with '_' followed by letters/numbers)
+      // Works even if the text file has extra spaces or junk characters
+      const match = rawText.match(/_([a-zA-Z0-9]{10,})/);
+
+      if (match && match[0]) {
+        // Construct the strict MakeCode Embed URL format
+        targetUrl = `https://makecode.microbit.org/---codeembed#pub:${match[0]}`;
+      } else if (rawText.includes("makecode.microbit.org")) {
+        // Fallback if the regex fails but it's still a valid URL
+        targetUrl = rawText;
       }
 
       if (targetUrl) {
+        // MUST include sandbox permissions, otherwise modern browsers block MakeCode iframes
+        iframe.setAttribute("sandbox", "allow-popups allow-forms allow-scripts allow-same-origin");
         iframe.src = targetUrl;
       } else {
         iframe.srcdoc = `
-          <body style="background:#111827; color:#9ca3af; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; margin:0;">
+          <body style="background:#111827; color:#9ca3af; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; margin:0; text-align:center;">
             <h3>No valid MakeCode link found.</h3>
-            <p style="font-size:0.85rem; color:#6b7280;">Place a .txt file inside the MakeCode folder containing your share link.</p>
+            <p style="font-size:0.85rem; color:#6b7280;">Place a standard <b>.txt</b> file (not a Google Doc) inside the MakeCode folder.<br>It should contain your share link (e.g. <i>https://makecode.microbit.org/_abc123</i>).</p>
           </body>`;
       }
 
+      // Handle the HEX file download button
       if (project.makecodeHexUrl) {
         hexBtn.href = project.makecodeHexUrl;
         hexBtn.style.display = 'inline-block';
