@@ -28,11 +28,7 @@
     /* EXACT STAGE CALCULATION */
     .stage { width: 100%; height: calc(100vh - 110px); position: relative; background: #0b0f19; overflow: hidden; }
     
-    /* 
-       OFF-SCREEN RENDERING FIX 
-       Instead of display: none (which makes MakeCode collapse), 
-       we push inactive panels 9999px off-screen so they still retain 100% height!
-    */
+    /* OFF-SCREEN RENDERING FIX */
     .view-panel { 
         position: absolute; 
         top: 0; 
@@ -159,14 +155,12 @@
       if(targetPanel) targetPanel.classList.add('active');
       if(targetBtn) targetBtn.classList.add('active');
       
-      // Tell Three.js canvas to recalculate its aspect ratio since it just came on screen
       if (tab === 'stl') {
         setTimeout(onWindowResize, 50); 
       } else if (tab === 'makecode') {
         const iframe = document.getElementById('makecode-frame');
         const dataSrc = iframe.getAttribute('data-src');
         if (dataSrc && (!iframe.src || iframe.src === 'about:blank' || iframe.src.includes('about:blank'))) {
-          // Delay loading iframe slightly so display block gets fully painted by browser
           setTimeout(() => { iframe.src = dataSrc; }, 100);
         }
       }
@@ -334,8 +328,8 @@
       const match = rawText.match(/_([a-zA-Z0-9\-]+)/);
 
       if (match && match[1]) {
-        // FIX: Reverted to ---embed which loads the actual webpage instead of raw code
-        targetUrl = `https://makecode.microbit.org/---embed#pub:_${match[1]}`;
+        // FIX: Reverted to the standard editor load URL instead of the raw JS embed file
+        targetUrl = `https://makecode.microbit.org/#pub:_${match[1]}`;
       } else if (rawText.includes("makecode.microbit.org")) {
         targetUrl = rawText;
       }
