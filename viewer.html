@@ -162,6 +162,13 @@
       // Tell Three.js canvas to recalculate its aspect ratio since it just came on screen
       if (tab === 'stl') {
         setTimeout(onWindowResize, 50); 
+      } else if (tab === 'makecode') {
+        const iframe = document.getElementById('makecode-frame');
+        const dataSrc = iframe.getAttribute('data-src');
+        if (dataSrc && (!iframe.src || iframe.src === 'about:blank' || iframe.src.includes('about:blank'))) {
+          // Delay loading iframe slightly so display block gets fully painted by browser
+          setTimeout(() => { iframe.src = dataSrc; }, 100);
+        }
       }
     }
 
@@ -316,7 +323,7 @@
       }
     }
 
-    // 4. MakeCode Viewer Engine (Now sets source IMMEDIATELY, preventing height collapse)
+    // 4. MakeCode Viewer Engine
     function initMakeCodeViewer() {
       const iframe = document.getElementById('makecode-frame');
       const hexBtn = document.getElementById('hex-download-link');
@@ -327,7 +334,8 @@
       const match = rawText.match(/_([a-zA-Z0-9\-]+)/);
 
       if (match && match[1]) {
-        targetUrl = `https://makecode.microbit.org/---codeembed#pub:_${match[1]}`;
+        // FIX: Reverted to ---embed which loads the actual webpage instead of raw code
+        targetUrl = `https://makecode.microbit.org/---embed#pub:_${match[1]}`;
       } else if (rawText.includes("makecode.microbit.org")) {
         targetUrl = rawText;
       }
@@ -335,8 +343,7 @@
       if (targetUrl) {
         iframe.removeAttribute('srcdoc'); 
         iframe.setAttribute("sandbox", "allow-popups allow-forms allow-scripts allow-same-origin");
-        // Because the panel is pushed off-screen (not display: none), we can load it instantly!
-        iframe.src = targetUrl; 
+        iframe.setAttribute('data-src', targetUrl);
       } else {
         iframe.srcdoc = `
           <body style="background:#111827; color:#9ca3af; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; margin:0; text-align:center;">
