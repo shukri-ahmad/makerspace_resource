@@ -28,12 +28,14 @@
     .view-panel { width: 100%; height: 100%; display: none; }
     .view-panel.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
+    /* 1. Tutorial Swiper */
     .swiper { width: 100%; height: 100%; }
     .swiper-slide { display: flex; align-items: center; justify-content: center; padding: 10px; }
     .swiper-slide img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
     .side-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(37, 99, 235, 0.45); color: #fff; border: 1px solid rgba(255,255,255,0.2); width: 44px; height: 44px; border-radius: 50%; cursor: pointer; z-index: 20; }
     .side-nav-prev { left: 15px; } .side-nav-next { right: 15px; }
 
+    /* 2. Components List Panel */
     .components-container { width: 100%; max-width: 800px; height: 100%; overflow-y: auto; padding: 1.5rem; }
     .component-card { background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
     .component-info h4 { margin: 0 0 4px 0; color: #f9fafb; font-size: 0.95rem; }
@@ -41,12 +43,14 @@
     .buy-btn { background: #16a34a; color: white; padding: 6px 14px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.85rem; border:none; cursor:pointer; }
     .buy-btn:hover { background: #15803d; }
 
+    /* 3. 3D STL Viewer Panel */
     #stl-canvas-container { width: 100%; height: 100%; position: relative; background: #090d16; }
     .stl-sidebar { position: absolute; top: 15px; left: 15px; background: rgba(17, 24, 39, 0.9); backdrop-filter: blur(8px); padding: 12px; border-radius: 8px; border: 1px solid #374151; max-width: 260px; z-index: 10; }
     .stl-sidebar select { width: 100%; background: #1f2937; color: white; border: 1px solid #4b5563; padding: 8px; border-radius: 4px; margin-bottom: 8px; }
     .download-stl-btn { display: block; width: 100%; background: #2563eb; color: white; text-align: center; padding: 8px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.85rem; }
-    #stl-status { font-size: 0.75rem; color: #60a5fa; margin-top: 6px; text-align: center; }
+    #stl-status { font-size: 0.75rem; color: #60a5fa; margin-top: 6px; text-align: center; font-weight: bold; }
 
+    /* 4. MakeCode Viewer Panel */
     .makecode-container { width: 100%; height: 100%; display: flex; flex-direction: column; background: #111827; }
     .makecode-toolbar { height: 45px; background: #1f2937; display: flex; justify-content: space-between; align-items: center; padding: 0 1rem; border-bottom: 1px solid #374151; flex-shrink: 0; }
     .hex-btn { background: #2563eb; color: white; padding: 5px 12px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold; }
@@ -137,7 +141,7 @@
       } else if (tab === 'stl') {
         document.querySelectorAll('.tab-btn')[2].classList.add('active');
         document.getElementById('panel-stl').classList.add('active');
-        setTimeout(onWindowResize, 50);
+        setTimeout(onWindowResize, 50); // Ensure canvas resizes smoothly
       } else if (tab === 'makecode') {
         document.querySelectorAll('.tab-btn')[3].classList.add('active');
         document.getElementById('panel-makecode').classList.add('active');
@@ -183,7 +187,7 @@
       });
     }
 
-    // 3. Three.js 3D STL Engine (Native Fetch parsing for large Base64 Arrays)
+    // 3. Three.js 3D STL Engine (Robust Proxy Loading to fix binary corruption)
     function init3DViewer() {
       const container = document.getElementById('stl-canvas-container');
       scene = new THREE.Scene();
@@ -231,15 +235,17 @@
       if (!file) return;
 
       document.getElementById('download-stl-link').href = file.downloadUrl;
-      statusEl.innerText = 'Rendering 3D model...';
+      statusEl.innerText = 'Connecting to Drive...';
+      statusEl.style.color = '#60a5fa';
 
-      // Bypass window.atob limits by using the browser's native fetch API to decode the Data URI
-      fetch(file.dataUri)
-        .then(res => res.arrayBuffer())
-        .then(buffer => {
-          const loader = new THREE.STLLoader();
-          const geometry = loader.parse(buffer);
-          
+      const loader = new THREE.STLLoader();
+      
+      // Use corsproxy to safely grab the raw binary file directly from the download URL, bypassing Base64 corruption
+      const proxyUrl = "https://corsproxy.io/?url=" + encodeURIComponent(file.downloadUrl);
+
+      loader.load(
+        proxyUrl,
+        (geometry) => {
           if (currentMesh) scene.remove(currentMesh);
 
           const material = new THREE.MeshPhongMaterial({ color: 0x2563eb, specular: 0x111111, shininess: 150 });
@@ -247,7 +253,6 @@
 
           geometry.center();
           currentMesh.rotation.x = -Math.PI / 2;
-
           scene.add(currentMesh);
 
           geometry.computeBoundingSphere();
@@ -255,12 +260,40 @@
           camera.position.set(radius * 2.2, radius * 2.2, radius * 2.2);
           controls.target.set(0, 0, 0);
           
-          statusEl.innerText = 'Model Loaded Successfully';
-        })
-        .catch(err => {
-          console.error("STL Parsing Error:", err);
-          statusEl.innerText = 'Error parsing STL geometry';
-        });
+          statusEl.innerText = 'Model Loaded';
+          statusEl.style.color = '#4ade80'; // Success green
+        },
+        (xhr) => {
+          if (xhr.lengthComputable) {
+            statusEl.innerText = 'Loading: ' + Math.round((xhr.loaded / xhr.total) * 100) + '%';
+          }
+        },
+        (error) => {
+          console.error("Proxy Load Error:", error);
+          
+          // Fallback Proxy if CORSproxy.io blocks it
+          const fallbackProxy = "https://api.allorigins.win/raw?url=" + encodeURIComponent(file.downloadUrl);
+          statusEl.innerText = 'Attempting backup server...';
+          
+          loader.load(fallbackProxy, (geometry) => {
+             if (currentMesh) scene.remove(currentMesh);
+             const material = new THREE.MeshPhongMaterial({ color: 0x2563eb, specular: 0x111111, shininess: 150 });
+             currentMesh = new THREE.Mesh(geometry, material);
+             geometry.center();
+             currentMesh.rotation.x = -Math.PI / 2;
+             scene.add(currentMesh);
+             geometry.computeBoundingSphere();
+             const radius = geometry.boundingSphere.radius || 50;
+             camera.position.set(radius * 2.2, radius * 2.2, radius * 2.2);
+             controls.target.set(0, 0, 0);
+             statusEl.innerText = 'Model Loaded';
+             statusEl.style.color = '#4ade80';
+          }, undefined, () => {
+             statusEl.innerText = 'Failed to load model';
+             statusEl.style.color = '#f87171'; // Error red
+          });
+        }
+      );
     }
 
     function animate3D() {
@@ -278,16 +311,21 @@
       }
     }
 
-    // 4. MakeCode Viewer Engine
+    // 4. MakeCode Viewer Engine (Strict Embed URL Reconstruction)
     function initMakeCodeViewer() {
       const iframe = document.getElementById('makecode-frame');
       const hexBtn = document.getElementById('hex-download-link');
 
       let targetUrl = project.makecodeUrl || "";
 
-      if (targetUrl.includes('makecode.microbit.org') && !targetUrl.includes('---embed')) {
-        let codeId = targetUrl.split('/').pop().replace('_', '');
-        targetUrl = "https://makecode.microbit.org/---embed#pub:_" + codeId;
+      // Force strictly correct Micro:bit code embed format regardless of what is typed in the text file
+      if (targetUrl.includes('makecode.microbit.org')) {
+        const match = targetUrl.match(/_([a-zA-Z0-9\-]+)/);
+        if (match && match[1]) {
+          const codeId = match[1];
+          // Use '---codeembed' for the previewer, or '#pub:' for the full editor
+          targetUrl = `https://makecode.microbit.org/---codeembed#pub:_${codeId}`;
+        }
       }
 
       if (targetUrl) {
@@ -295,8 +333,8 @@
       } else {
         iframe.srcdoc = `
           <body style="background:#111827; color:#9ca3af; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; margin:0;">
-            <h3>No live MakeCode share link uploaded to Drive.</h3>
-            <p style="font-size:0.85rem; color:#6b7280;">Place a text file with your share link inside the MakeCode folder in Drive.</p>
+            <h3>No valid MakeCode link found.</h3>
+            <p style="font-size:0.85rem; color:#6b7280;">Place a .txt file inside the MakeCode folder containing your share link.</p>
           </body>`;
       }
 
