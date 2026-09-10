@@ -28,7 +28,7 @@
     /* EXACT STAGE CALCULATION */
     .stage { width: 100%; height: calc(100vh - 110px); position: relative; background: #0b0f19; overflow: hidden; }
     
-    /* OFF-SCREEN RENDERING FIX */
+    /* OFF-SCREEN RENDERING FIX (Prevents iframe height collapse) */
     .view-panel { 
         position: absolute; 
         top: 0; 
@@ -317,7 +317,7 @@
       }
     }
 
-    // 4. MakeCode Viewer Engine
+    // 4. MakeCode Viewer Engine (Completely rebuilt for pure HTML embedding)
     function initMakeCodeViewer() {
       const iframe = document.getElementById('makecode-frame');
       const hexBtn = document.getElementById('hex-download-link');
@@ -325,16 +325,20 @@
       let rawText = project.makecodeUrl || "";
       let targetUrl = "";
 
-      const match = rawText.match(/_([a-zA-Z0-9\-]+)/);
-
-      if (match && match[1]) {
-        // FIX: Reverted to the standard editor load URL instead of the raw JS embed file
-        targetUrl = `https://makecode.microbit.org/#pub:_${match[1]}`;
-      } else if (rawText.includes("makecode.microbit.org")) {
-        targetUrl = rawText;
+      if (rawText) {
+        // 1. Grab whatever is at the very end of the URL from Google Drive
+        let codeId = rawText.split('/').pop();
+        
+        // 2. Clean out any of the broken prefixes injected by Apps Script
+        codeId = codeId.replace('---embed#pub:', '')
+                       .replace('---codeembed#pub:', '')
+                       .replace('#pub:', '');
+                       
+        // 3. Build a pure, standard MakeCode public link
+        targetUrl = `https://makecode.microbit.org/#pub:${codeId}`;
       }
 
-      if (targetUrl) {
+      if (targetUrl && targetUrl !== "https://makecode.microbit.org/#pub:") {
         iframe.removeAttribute('srcdoc'); 
         iframe.setAttribute("sandbox", "allow-popups allow-forms allow-scripts allow-same-origin");
         iframe.setAttribute('data-src', targetUrl);
