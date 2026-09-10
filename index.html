@@ -8,7 +8,7 @@
   <!-- Modern Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
 
   <style>
     * { box-sizing: border-box; }
@@ -19,27 +19,52 @@
       min-height: 100vh;
       background: #090d16;
       background-image: 
-        radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(217, 37, 37, 0.1) 0px, transparent 50%);
+        radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.18) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(217, 37, 37, 0.12) 0px, transparent 50%);
       color: #f3f4f6;
       font-family: 'Plus Jakarta Sans', sans-serif;
       overflow-x: hidden;
     }
 
-    /* GLASS HEADER */
+    /* GLASS HEADER WITH PROMINENT LOGO */
     header {
-      height: 80px;
-      background: rgba(17, 24, 39, 0.7);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      padding: 0 2rem;
+      min-height: 90px;
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 0.75rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 2px solid rgba(217, 37, 37, 0.4);
       position: sticky;
       top: 0;
       z-index: 100;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    /* PROMINENT LOGO ICON BADGE */
+    .brand-logo-badge {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #d92525 0%, #2563eb 100%);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 1.5rem;
+      color: white;
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.4), 0 0 10px rgba(217, 37, 37, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      flex-shrink: 0;
     }
 
     .brand-container {
@@ -49,47 +74,48 @@
 
     .brand-title {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 1.35rem;
-      font-weight: 700;
+      font-size: 1.6rem;
+      font-weight: 800;
       letter-spacing: -0.02em;
-      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      background: linear-gradient(135deg, #ffffff 30%, #60a5fa 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      line-height: 1.1;
     }
 
     .brand-tagline {
-      font-size: 0.78rem;
-      font-weight: 600;
+      font-size: 0.82rem;
+      font-weight: 700;
       color: #38bdf8;
       letter-spacing: 0.02em;
-      margin-top: 2px;
+      margin-top: 4px;
     }
 
     .status-badge {
       background: rgba(37, 99, 235, 0.15);
       border: 1px solid rgba(59, 130, 246, 0.3);
       color: #60a5fa;
-      padding: 6px 14px;
+      padding: 8px 16px;
       border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .status-pulse {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
       background: #4ade80;
       border-radius: 50%;
-      box-shadow: 0 0 8px #4ade80;
+      box-shadow: 0 0 10px #4ade80;
     }
 
     /* HERO BANNER */
     .hero {
       text-align: center;
-      padding: 3rem 1.5rem 2rem;
+      padding: 3.5rem 1.5rem 2rem;
       max-width: 900px;
       margin: 0 auto;
     }
@@ -102,25 +128,25 @@
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: 12px;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
       box-shadow: 0 4px 14px rgba(217, 37, 37, 0.3);
     }
 
     .hero h1 {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 2.5rem;
-      font-weight: 700;
+      font-size: 2.75rem;
+      font-weight: 800;
       margin: 0 0 1rem;
       line-height: 1.2;
     }
 
     .hero p {
       color: #9ca3af;
-      font-size: 1.05rem;
+      font-size: 1.1rem;
       margin: 0 auto;
-      max-width: 600px;
+      max-width: 620px;
       line-height: 1.6;
     }
 
@@ -227,23 +253,30 @@
 </head>
 <body>
 
+  <!-- PROMINENT HEADER WITH LOGO BADGE -->
   <header>
-    <div class="brand-container">
-      <span class="brand-title">MAKERSPACE@UTHM</span>
-      <span class="brand-tagline">Learning Through Robotics, Not Learning Robotics</span>
+    <div class="brand-wrapper">
+      <div class="brand-logo-badge">M</div>
+      <div class="brand-container">
+        <span class="brand-title">MAKERSPACE@UTHM</span>
+        <span class="brand-tagline">Learning Through Robotics, Not Learning Robotics</span>
+      </div>
     </div>
+
     <div class="status-badge">
       <div class="status-pulse"></div>
       PBL Workbench Hub
     </div>
   </header>
 
+  <!-- HERO SECTION -->
   <section class="hero">
     <span class="hero-badge">Interactive Learning Hub</span>
     <h1>Explore Hands-On PBL Projects</h1>
-    <p>Select a project below to launch interactive step-by-step guides, inspect 3D STL parts, view component lists, and edit live MakeCode programs.</p>
+    <p>Select a project below to launch interactive step-by-step guides, inspect 3D STL parts, view component lists, and preview live MakeCode programs.</p>
   </section>
 
+  <!-- CATALOG GRID -->
   <main class="catalog-container">
     <div id="loading-state">
       <div class="spinner"></div>
@@ -255,10 +288,8 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbz0yr_RIIed8K_6YoijYV3-VEdnBmpQsu_f5Wt1TCKqrXvsb5a1ZH_KWPRfPCnOeZO1FQ/exec";
 
-    // Helper: Converts Google Drive viewing/sharing links into direct direct-display image URLs
     function formatDriveImageUrl(url) {
       if (!url) return '';
-      // If it contains a Drive File ID, convert to direct view endpoint
       const match = url.match(/[\w-]{25,}/);
       if (match && match[0]) {
         return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w800`;
