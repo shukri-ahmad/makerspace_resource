@@ -7,7 +7,7 @@
   <style>
     body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #090d16; margin: 0; color: #f3f4f6; }
     header { background: #111827; padding: 1.2rem 2rem; display: flex; align-items: center; justify-content: center; gap: 15px; border-bottom: 4px solid #d92525; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-    header img { height: 55px; }
+    header img { height: 55px; width: auto; }
     header h1 { margin: 0; font-size: 1.7rem; letter-spacing: 1px; color: #fff; text-transform: uppercase; }
     
     .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
@@ -33,7 +33,7 @@
 <body>
 
   <header>
-    <img src="logo.png" alt="MAKERSPACE Logo">
+    <img src="logo.png" alt="MAKERSPACE Logo" onerror="this.style.display='none'">
     <h1>MAKERSPACE@UTHM PBL GUIDES</h1>
   </header>
 
@@ -43,15 +43,27 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzemGueSjyuhgWZ_9eryBn9hY80u53UG3hWyyoXVLnxG1JdKykfvcgqlgXBwtdXgxp1Fw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbz8RhgUEIuDEEjEN2JL87Sb_F_kZQn94H_s-IQtA7BHiuVkcqb279nK7JYfvV05J8VV/exec";
 
-    fetch(API_URL)
-      .then(res => res.json())
+    fetch(API_URL, { redirect: "follow" })
+      .then(res => {
+        if (!res.ok) throw new Error("Network response was not ok: " + res.statusText);
+        return res.json();
+      })
       .then(data => {
         document.getElementById('status').style.display = 'none';
+
+        if (!data || data.length === 0) {
+          document.getElementById('status').innerText = 'No project folders found inside the Drive directory.';
+          document.getElementById('status').style.display = 'block';
+          return;
+        }
+
         sessionStorage.setItem('makerspace_projects', JSON.stringify(data));
         
         const container = document.getElementById('catalog-container');
+        container.innerHTML = '';
+
         data.forEach((proj, idx) => {
           const card = document.createElement('div');
           card.className = 'card';
@@ -60,9 +72,9 @@
             <div class="card-body">
               <h3>${proj.title}</h3>
               <div class="badges">
-                <span class="badge ${proj.tutorialPages.length ? 'active':''}">📚 Guide (${proj.tutorialPages.length}p)</span>
-                <span class="badge ${proj.components.length ? 'active':''}">🧩 ${proj.components.length} Parts</span>
-                <span class="badge ${proj.stlFiles.length ? 'active':''}">📦 ${proj.stlFiles.length} STL</span>
+                <span class="badge ${proj.tutorialPages && proj.tutorialPages.length ? 'active':''}">📚 Guide (${proj.tutorialPages ? proj.tutorialPages.length : 0}p)</span>
+                <span class="badge ${proj.components && proj.components.length ? 'active':''}">🧩 ${proj.components ? proj.components.length : 0} Parts</span>
+                <span class="badge ${proj.stlFiles && proj.stlFiles.length ? 'active':''}">📦 ${proj.stlFiles ? proj.stlFiles.length : 0} STL</span>
                 <span class="badge ${proj.makecodeUrl || proj.makecodeHexUrl ? 'active':''}">💻 MakeCode</span>
               </div>
               <a class="btn" href="viewer.html?id=${idx}">Start Project Guide</a>
@@ -71,8 +83,9 @@
           container.appendChild(card);
         });
       })
-      .catch(() => {
-        document.getElementById('status').innerText = 'Failed to load projects. Check Apps Script URL or permissions.';
+      .catch(err => {
+        console.error("Fetch Error:", err);
+        document.getElementById('status').innerText = 'Failed to load projects. Please verify Google Apps Script deployment permissions.';
       });
   </script>
 </body>
