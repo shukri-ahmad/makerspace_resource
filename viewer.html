@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>PBL Guide Workbench | MAKERSPACE@UTHM</title>
+  <title>MAKERSPACE@UTHM Hub</title>
 
   <!-- Swiper JS & Three.js Engine -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
@@ -57,6 +57,11 @@
     .edit-btn { background: #16a34a; color: white; padding: 5px 12px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; font-weight: bold; margin-left: 8px; }
     .edit-btn:hover { background: #15803d; }
     #makecode-wrapper { flex: 1; width: 100%; height: 100%; position: relative; display: flex; flex-direction: column; }
+    
+    /* Code Switcher */
+    .code-switcher { background: #1f2937; padding: 6px; text-align: center; border-bottom: 1px solid #374151; display: flex; justify-content: center; gap: 10px; align-items: center; }
+    .code-toggle-btn { background: #374151; color: #9ca3af; border: none; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+    .code-toggle-btn.active { background: #d92525; color: white; box-shadow: 0 0 10px rgba(217, 37, 37, 0.4); }
   </style>
 </head>
 <body>
@@ -75,21 +80,18 @@
   </div>
 
   <div class="stage">
-    <!-- PANEL 1: TUTORIAL GUIDE -->
     <div id="panel-tutorial" class="view-panel active">
       <button class="side-nav-btn side-nav-prev" onclick="swiper.slidePrev()">❮</button>
       <button class="side-nav-btn side-nav-next" onclick="swiper.slideNext()">❯</button>
       <div class="swiper" id="swiper-container"><div class="swiper-wrapper" id="swiper-wrapper"></div></div>
     </div>
 
-    <!-- PANEL 2: PARTS LIST -->
     <div id="panel-components" class="view-panel">
       <div class="components-container" id="components-list">
         <p style="text-align: center; color: #9ca3af;">Loading required parts list...</p>
       </div>
     </div>
 
-    <!-- PANEL 3: 3D STL VIEWER -->
     <div id="panel-stl" class="view-panel">
       <div id="stl-canvas-container">
         <div class="stl-sidebar">
@@ -101,7 +103,6 @@
       </div>
     </div>
 
-    <!-- PANEL 4: MAKECODE VIEWER -->
     <div id="panel-makecode" class="view-panel">
       <div class="makecode-toolbar">
         <span style="font-size: 0.85rem; color: #9ca3af;">MakeCode Block Preview (Read-Only)</span>
@@ -115,11 +116,12 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbz0yr_RIIed8K_6YoijYV3-VEdnBmpQsu_f5Wt1TCKqrXvsb5a1ZH_KWPRfPCnOeZO1FQ/exec";
+    // APPS SCRIPT URL:
+    const API_URL = "https://script.google.com/macros/s/AKfycbyHIpqSz3wZT984jtw-TwQaxZJMwJwIdmAQg9Jz3_0IkdjTBRYjbtxnHWCK84K_MIxUTQ/exec";
 
     let swiper, scene, camera, renderer, controls, currentMesh;
-    let makecodeProjectCode = "";
-    let fullScreenUrl = "";
+    let makecodeProjects = [];
+    let currentCodeIndex = 0;
 
     const params = new URLSearchParams(window.location.search);
     const id = parseInt(params.get('id')) || 0;
@@ -144,32 +146,14 @@
       const targetBtn = document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`);
       
       if(targetPanel) targetPanel.classList.add('active');
-      if(targetBtn) targetBtn.classList.active;
       if(targetBtn) targetBtn.classList.add('active');
       
       if (tab === 'stl') {
         setTimeout(onWindowResize, 50); 
       } else if (tab === 'makecode') {
         const wrapper = document.getElementById('makecode-wrapper');
-        
         if (wrapper.innerHTML.trim() === '') {
-          if (makecodeProjectCode) {
-            wrapper.innerHTML = `
-              <div style="background: #111827; padding: 8px; text-align: center; border-bottom: 1px solid #1f2937; flex-shrink:0;">
-                <span style="color: #9ca3af; font-size: 0.85rem;">Preview mode. To modify variables or blocks, click </span>
-                <a href="${fullScreenUrl}" target="_blank" style="color: #38bdf8; text-decoration: none; font-size: 0.85rem; font-weight: bold;">
-                  ✏️ Open Full Interactive Editor
-                </a>
-              </div>
-              <iframe id="makecode-frame" src="https://makecode.microbit.org/---codeembed#pub:${makecodeProjectCode}" allowfullscreen="allowfullscreen" frameborder="0" style="flex:1; width:100%; height:100%; border:none; display:block;"></iframe>
-            `;
-          } else {
-            wrapper.innerHTML = `
-              <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; text-align:center;">
-                <h3 style="color:#9ca3af;">No valid MakeCode link found.</h3>
-                <p style="color:#6b7280; font-size:0.85rem;">Ensure a .txt file inside the Drive folder contains your valid share link.</p>
-              </div>`;
-          }
+          renderMakeCodeIframe();
         }
       }
     }
@@ -261,7 +245,7 @@
       if (!file) return;
 
       document.getElementById('download-stl-link').href = file.downloadUrl;
-      statusEl.innerText = 'Extracting from Drive...';
+      statusEl.innerText = 'Extracting...';
       statusEl.style.color = '#60a5fa';
 
       const proxyUrl = API_URL + "?fileId=" + file.id;
@@ -271,7 +255,7 @@
         .then(base64 => {
           if (base64 === "ERROR") throw new Error("File extraction failed");
           
-          statusEl.innerText = 'Building 3D Mesh...';
+          statusEl.innerText = 'Building 3D...';
           const buffer = base64ToArrayBuffer(base64);
           const loader = new THREE.STLLoader();
           const geometry = loader.parse(buffer);
@@ -294,8 +278,8 @@
           statusEl.style.color = '#4ade80';
         })
         .catch(err => {
-          console.error("STL Native Proxy Error:", err);
-          statusEl.innerText = 'Failed to load model';
+          console.error("STL Proxy Error:", err);
+          statusEl.innerText = 'Failed';
           statusEl.style.color = '#f87171';
         });
     }
@@ -325,33 +309,79 @@
       }
     }
 
-    // 4. PARSER LOGIC & EDITOR LINK SETUP
+    // 4. MULTI-MAKECODE PARSER LOGIC
     function initMakeCodeViewer() {
       const hexBtn = document.getElementById('hex-download-link');
-      const openEditorLink = document.getElementById('open-editor-link');
       let rawText = project.makecodeUrl || "";
 
       if (rawText) {
-        const sMatch = rawText.match(/(S\d{5}-\d{5}-\d{5}-\d{5})/i);
-        const shortMatch = rawText.match(/(_[a-zA-Z0-9]+)/);
+        // Global search to extract ALL MakeCode IDs present in the text file
+        const matches = rawText.match(/(S\d{5}-\d{5}-\d{5}-\d{5}|_[a-zA-Z0-9]+)/g) || [];
+        const uniqueCodes = [...new Set(matches)]; // Filter duplicates
 
-        if (sMatch && sMatch[1]) {
-          makecodeProjectCode = sMatch[1];
-          fullScreenUrl = `https://makecode.microbit.org/${makecodeProjectCode}`;
-        } else if (shortMatch && shortMatch[1]) {
-          makecodeProjectCode = shortMatch[1];
-          fullScreenUrl = `https://makecode.microbit.org/${makecodeProjectCode}`;
-        }
-
-        if (fullScreenUrl) {
-          openEditorLink.href = fullScreenUrl;
-        }
+        makecodeProjects = uniqueCodes.map((code, index) => {
+          let label = `Code ${index + 1}`;
+          // If exactly two codes are found, auto-label them for MAKEROBOT RC Modules
+          if (uniqueCodes.length === 2) {
+            label = index === 0 ? "🎮 TX (Remote) Code" : "🤖 RX (Robot) Code";
+          }
+          return {
+            code: code,
+            label: label,
+            url: `https://makecode.microbit.org/${code}`
+          };
+        });
       }
 
       if (project.makecodeHexUrl) {
         hexBtn.href = project.makecodeHexUrl;
         hexBtn.style.display = 'inline-block';
       }
+    }
+
+    function renderMakeCodeIframe() {
+      const wrapper = document.getElementById('makecode-wrapper');
+      const openEditorLink = document.getElementById('open-editor-link');
+
+      if (makecodeProjects.length === 0) {
+        wrapper.innerHTML = `
+          <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; text-align:center;">
+            <h3 style="color:#9ca3af;">No valid MakeCode link found.</h3>
+            <p style="color:#6b7280; font-size:0.85rem;">Ensure a .txt file inside the Drive folder contains your valid share link.</p>
+          </div>`;
+        return;
+      }
+
+      const activeProject = makecodeProjects[currentCodeIndex];
+      openEditorLink.href = activeProject.url;
+
+      // Build toggle buttons if there are multiple codes
+      let switcherHTML = "";
+      if (makecodeProjects.length > 1) {
+        let buttons = makecodeProjects.map((p, i) => `
+          <button class="code-toggle-btn ${i === currentCodeIndex ? 'active' : ''}" onclick="switchCodeView(${i})">
+            ${p.label}
+          </button>
+        `).join('');
+        switcherHTML = `<div class="code-switcher">${buttons}</div>`;
+      }
+
+      wrapper.innerHTML = `
+        ${switcherHTML}
+        <div style="background: #111827; padding: 8px; text-align: center; border-bottom: 1px solid #1f2937; flex-shrink:0;">
+          <span style="color: #9ca3af; font-size: 0.85rem;">Preview mode. To modify variables or blocks, click </span>
+          <a href="${activeProject.url}" target="_blank" style="color: #38bdf8; text-decoration: none; font-size: 0.85rem; font-weight: bold;">
+            ✏️ Open Full Interactive Editor
+          </a>
+        </div>
+        <iframe src="https://makecode.microbit.org/---codeembed#pub:${activeProject.code}" allowfullscreen="allowfullscreen" frameborder="0" style="flex:1; width:100%; height:100%; border:none; display:block;"></iframe>
+      `;
+    }
+
+    // Function triggered by clicking the toggle buttons
+    function switchCodeView(index) {
+      currentCodeIndex = index;
+      renderMakeCodeIframe();
     }
   </script>
 </body>
