@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <title>MAKERSPACE@UTHM Hub</title>
 
+  <!-- BROWSER TAB LOGO (FAVICON) -->
+  <link rel="icon" type="image/png" href="logo.png">
+
   <!-- Swiper JS & Three.js Engine -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
@@ -29,8 +32,13 @@
     .view-panel { width: 100%; height: 100%; display: none; flex-direction: column; }
     .view-panel.active { display: flex; }
 
-    /* 1. Tutorial Swiper */
-    .swiper { width: 100%; height: 100%; }
+    /* 1. Tutorial Swiper & Progress Bar */
+    .tutorial-header { padding: 10px 15px; display: flex; align-items: center; gap: 15px; background: #1f2937; border-bottom: 1px solid #374151; flex-shrink: 0; }
+    .progress-bar-container { flex: 1; height: 8px; background: #374151; border-radius: 4px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: #4ade80; width: 0%; transition: width 0.3s ease; }
+    #slide-counter { color: #9ca3af; font-size: 0.85rem; font-weight: bold; min-width: 80px; text-align: right; }
+    
+    .swiper { width: 100%; flex: 1; }
     .swiper-slide { display: flex; align-items: center; justify-content: center; padding: 10px; }
     .swiper-slide img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
     .side-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(37, 99, 235, 0.45); color: #fff; border: 1px solid rgba(255,255,255,0.2); width: 44px; height: 44px; border-radius: 50%; cursor: pointer; z-index: 20; }
@@ -80,18 +88,33 @@
   </div>
 
   <div class="stage">
+    
+    <!-- PANEL 1: TUTORIAL GUIDE -->
     <div id="panel-tutorial" class="view-panel active">
-      <button class="side-nav-btn side-nav-prev" onclick="swiper.slidePrev()">❮</button>
-      <button class="side-nav-btn side-nav-next" onclick="swiper.slideNext()">❯</button>
-      <div class="swiper" id="swiper-container"><div class="swiper-wrapper" id="swiper-wrapper"></div></div>
+      
+      <!-- NEW PROGRESS BAR HEADER -->
+      <div class="tutorial-header">
+        <div class="progress-bar-container">
+          <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        </div>
+        <span id="slide-counter">Step 0 of 0</span>
+      </div>
+
+      <div style="position: relative; flex: 1; display: flex;">
+        <button class="side-nav-btn side-nav-prev" onclick="swiper.slidePrev()">❮</button>
+        <button class="side-nav-btn side-nav-next" onclick="swiper.slideNext()">❯</button>
+        <div class="swiper" id="swiper-container"><div class="swiper-wrapper" id="swiper-wrapper"></div></div>
+      </div>
     </div>
 
+    <!-- PANEL 2: PARTS LIST -->
     <div id="panel-components" class="view-panel">
       <div class="components-container" id="components-list">
         <p style="text-align: center; color: #9ca3af;">Loading required parts list...</p>
       </div>
     </div>
 
+    <!-- PANEL 3: 3D STL VIEWER -->
     <div id="panel-stl" class="view-panel">
       <div id="stl-canvas-container">
         <div class="stl-sidebar">
@@ -103,6 +126,7 @@
       </div>
     </div>
 
+    <!-- PANEL 4: MAKECODE VIEWER -->
     <div id="panel-makecode" class="view-panel">
       <div class="makecode-toolbar">
         <span style="font-size: 0.85rem; color: #9ca3af;">MakeCode Block Preview (Read-Only)</span>
@@ -158,17 +182,39 @@
       }
     }
 
-    // 1. Tutorial Engine
+    // 1. Tutorial Engine with Progress Bar
     function initTutorial() {
       const wrapper = document.getElementById('swiper-wrapper');
       if (!project.tutorialPages || !project.tutorialPages.length) {
         wrapper.innerHTML = '<div class="swiper-slide" style="color:#9ca3af;">No tutorial pages found in Drive.</div>';
         return;
       }
+      
+      const totalSlides = project.tutorialPages.length;
+      
       project.tutorialPages.forEach(url => {
         wrapper.innerHTML += `<div class="swiper-slide"><img src="${url}"></div>`;
       });
-      swiper = new Swiper('#swiper-container', { speed: 400, grabCursor: true });
+      
+      swiper = new Swiper('#swiper-container', { 
+        speed: 400, 
+        grabCursor: true,
+        on: {
+          init: function () {
+            updateProgressBar(this.activeIndex, totalSlides);
+          },
+          slideChange: function () {
+            updateProgressBar(this.activeIndex, totalSlides);
+          }
+        }
+      });
+    }
+
+    function updateProgressBar(currentIndex, totalSlides) {
+      const step = currentIndex + 1;
+      const percentage = (step / totalSlides) * 100;
+      document.getElementById('slide-counter').innerText = `Step ${step} of ${totalSlides}`;
+      document.getElementById('progress-bar-fill').style.width = `${percentage}%`;
     }
 
     // 2. Components List Engine
@@ -315,13 +361,11 @@
       let rawText = project.makecodeUrl || "";
 
       if (rawText) {
-        // Global search to extract ALL MakeCode IDs present in the text file
         const matches = rawText.match(/(S\d{5}-\d{5}-\d{5}-\d{5}|_[a-zA-Z0-9]+)/g) || [];
-        const uniqueCodes = [...new Set(matches)]; // Filter duplicates
+        const uniqueCodes = [...new Set(matches)]; 
 
         makecodeProjects = uniqueCodes.map((code, index) => {
           let label = `Code ${index + 1}`;
-          // If exactly two codes are found, auto-label them for MAKEROBOT RC Modules
           if (uniqueCodes.length === 2) {
             label = index === 0 ? "🎮 TX (Remote) Code" : "🤖 RX (Robot) Code";
           }
@@ -355,7 +399,6 @@
       const activeProject = makecodeProjects[currentCodeIndex];
       openEditorLink.href = activeProject.url;
 
-      // Build toggle buttons if there are multiple codes
       let switcherHTML = "";
       if (makecodeProjects.length > 1) {
         let buttons = makecodeProjects.map((p, i) => `
@@ -378,7 +421,6 @@
       `;
     }
 
-    // Function triggered by clicking the toggle buttons
     function switchCodeView(index) {
       currentCodeIndex = index;
       renderMakeCodeIframe();
