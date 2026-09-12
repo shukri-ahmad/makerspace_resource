@@ -32,8 +32,8 @@
     .view-panel { width: 100%; height: 100%; display: none; flex-direction: column; }
     .view-panel.active { display: flex; }
 
-    /* 1. Tutorial Swiper & Progress Bar */
-    .tutorial-header { padding: 10px 15px; display: flex; align-items: center; gap: 15px; background: #1f2937; border-bottom: 1px solid #374151; flex-shrink: 0; }
+    /* 1. Tutorial Swiper & Progress Bar (MOVED TO BOTTOM) */
+    .tutorial-footer { padding: 10px 15px; display: flex; align-items: center; gap: 15px; background: #1f2937; border-top: 1px solid #374151; flex-shrink: 0; }
     .progress-bar-container { flex: 1; height: 8px; background: #374151; border-radius: 4px; overflow: hidden; }
     .progress-bar-fill { height: 100%; background: #4ade80; width: 0%; transition: width 0.3s ease; }
     #slide-counter { color: #9ca3af; font-size: 0.85rem; font-weight: bold; min-width: 80px; text-align: right; }
@@ -92,19 +92,21 @@
     <!-- PANEL 1: TUTORIAL GUIDE -->
     <div id="panel-tutorial" class="view-panel active">
       
-      <!-- NEW PROGRESS BAR HEADER -->
-      <div class="tutorial-header">
+      <!-- IMAGE VIEWER AT THE TOP -->
+      <div style="position: relative; flex: 1; display: flex;">
+        <button class="side-nav-btn side-nav-prev" onclick="swiper.slidePrev()">❮</button>
+        <button class="side-nav-btn side-nav-next" onclick="swiper.slideNext()">❯</button>
+        <div class="swiper" id="swiper-container"><div class="swiper-wrapper" id="swiper-wrapper"></div></div>
+      </div>
+
+      <!-- PROGRESS BAR AT THE BOTTOM -->
+      <div class="tutorial-footer">
         <div class="progress-bar-container">
           <div id="progress-bar-fill" class="progress-bar-fill"></div>
         </div>
         <span id="slide-counter">Step 0 of 0</span>
       </div>
 
-      <div style="position: relative; flex: 1; display: flex;">
-        <button class="side-nav-btn side-nav-prev" onclick="swiper.slidePrev()">❮</button>
-        <button class="side-nav-btn side-nav-next" onclick="swiper.slideNext()">❯</button>
-        <div class="swiper" id="swiper-container"><div class="swiper-wrapper" id="swiper-wrapper"></div></div>
-      </div>
     </div>
 
     <!-- PANEL 2: PARTS LIST -->
